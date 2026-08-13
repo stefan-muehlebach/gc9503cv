@@ -1,0 +1,733 @@
+[
+    {
+        "name": "YellowBlueBack",
+        "colors": [
+            "0xB9B90A",
+            "0x0A5853",
+            "0xB9B90A"
+        ]
+    },
+    {
+        "name": "YellowBlueDark",
+        "colors": [
+            "0x595905",
+            "0x063833"
+        ]
+    },
+    {
+        "name": "PinkBlueBack",
+        "colors": [
+            "0xA60C5F",
+            "0x000080",
+            "0xA60C5F"
+        ]
+    },
+    {
+        "name": "YellowOrangeBack",
+        "colors": [
+            "0xA8A800",
+            "0xA11600",
+            "0xA8A800"
+        ]
+    },
+    {
+        "name": "BackDGreenDRed",
+        "colors": [
+            "0x007400",
+            "0x9A2222"
+        ]
+    },
+    {
+        "name": "SalmonBlueBack",
+        "colors": [
+            "0x814124",
+            "0x4C8BAA"
+        ]
+    },
+    {
+        "name": "RGB",
+        "colors": [
+            "0xFF0000",
+            "0xFFFF00",
+            "0x00FF00",
+            "0x00FFFF",
+            "0x0000FF",
+            "0xFF00FF"
+        ]
+    },
+    {
+        "name": "Accent",
+        "colors": [
+            "0x666666",
+            "0xBF5B17",
+            "0xF0027F",
+            "0x386CB0",
+            "0xFFFF99",
+            "0xFDC086",
+            "0xBEAED4",
+            "0x7FC97F"
+        ]
+    },
+    {
+        "name": "CoolWarm",
+        "colors": [
+            "0xB10127",
+            "0xC86450",
+            "0xD99A81",
+            "0xEBD9CF",
+            "0xD6DEEE",
+            "0x9AA8E3",
+            "0x757CD6",
+            "0x584EC4"
+        ]
+    },
+    {
+        "name": "CoolWarmInv",
+        "colors": [
+            "0x4efed8",
+            "0x379baf",
+            "0x26657e",
+            "0x142630",
+            "0x292111",
+            "0x65571c",
+            "0x8a8329",
+            "0xa7b13b"
+        ]
+    },
+    {
+        "name": "Chroma",
+        "colors": [
+            "0x8B0000",
+            "0xB0062C",
+            "0xD21F47",
+            "0xEE4256",
+            "0xFF9777",
+            "0xFFBC94",
+            "0xFFDFB8",
+            "0xFFFFE0"
+        ]
+    },
+    {
+        "name": "ChromaInv",
+        "colors": [
+            "0x74ffff",
+            "0x4ff9d3",
+            "0x2de0b8",
+            "0x11bda9",
+            "0x006888",
+            "0x00436b",
+            "0x002047",
+            "0x00001f"
+        ]
+    },
+    {
+        "name": "DarkSide",
+        "colors": [
+            "0x666666",
+            "0xA6761D",
+            "0xE6AB02",
+            "0x66A61E",
+            "0xE7298A",
+            "0x7570B3",
+            "0xD95F02",
+            "0x1B9E77"
+        ]
+    },
+    {
+        "name": "MoreLand",
+        "colors": [
+            "0xB40426",
+            "0xE26953",
+            "0xF7A88A",
+            "0xEDD1C2",
+            "0xC9D8F0",
+            "0x9ABBFF",
+            "0x6889EE",
+            "0x3B4DC1"
+        ]
+    },
+    {
+        "name": "Paired",
+        "colors": [
+            "0xFF7F00",
+            "0xFDBF6F",
+            "0xE31A1C",
+            "0xFB9A99",
+            "0x33A02C",
+            "0xB2DF8A",
+            "0x1F78B4",
+            "0xA6CEE3"
+        ]
+    },
+    {
+        "name": "PairedInv",
+        "colors": [
+            "0x0080ff",
+            "0x024090",
+            "0x1ce5e3",
+            "0x046566",
+            "0xcc5fd3",
+            "0x4d2075",
+            "0xe0874b",
+            "0x59311c"
+        ]
+    },
+    {
+        "name": "Parula",
+        "colors": [
+            "0xF9FB0E",
+            "0xF7CB34",
+            "0xC5BB5E",
+            "0x6BBC85",
+            "0x1BAFB5",
+            "0x108FD0",
+            "0x0568DF",
+            "0x352A87"
+        ]
+    },
+    {
+        "name": "ParulaInv",
+        "colors": [
+            "0x0604f1",
+            "0x0834cb",
+            "0x3a44a1",
+            "0x94437a",
+            "0xe4504a",
+            "0xef702f",
+            "0xfa9720",
+            "0xcad578"
+        ]
+    },
+    {
+        "name": "ParulaExtended",
+        "colors": [
+            "0x828206",
+            "0x816919",
+            "0x676130",
+            "0x376245",
+            "0x0c5a5e",
+            "0x1a1446",
+            "0x021969",
+            "0x1c2253",
+            "0x4d223f",
+            "0x772825",
+            "0x7d3917",
+            "0x824e0f",
+            "0x696e3f"
+        ]
+    },
+    {
+        "name": "Plasma",
+        "colors": [
+            "0xF0F921",
+            "0xFEBC2B",
+            "0xF48948",
+            "0xDB5B68",
+            "0xB93389",
+            "0x8B09A5",
+            "0x5402A3",
+            "0x0F0787"
+        ]
+    },
+    {
+        "name": "Set",
+        "colors": [
+            "0xF781BF",
+            "0xA65628",
+            "0xFFFF33",
+            "0xFF7F00",
+            "0x984EA3",
+            "0x4DAF4A",
+            "0x377EB8",
+            "0xE41A1C"
+        ]
+    },
+    {
+        "name": "Spectral",
+        "colors": [
+            "0x3288BD",
+            "0x66C2A5",
+            "0xABDDA4",
+            "0xE6F598",
+            "0xFEE08B",
+            "0xFDAE61",
+            "0xF46D43",
+            "0xD53E4F"
+        ]
+    },
+    {
+        "name": "Turbo",
+        "colors": [
+            "0x7A0403",
+            "0xDB3A07",
+            "0xFE9A2D",
+            "0xD1E935",
+            "0x63FC6A",
+            "0x1CCED6",
+            "0x4777EF",
+            "0x31143F"
+        ]
+    },
+    {
+        "name": "Turbo2",
+        "colors": [
+            "0xC70705",
+            "0x7A0403",
+            "0xDB3A07",
+            "0x842304",
+            "0xFE9A2D",
+            "0xC56701",
+            "0xD1E935",
+            "0xA0B514",
+            "0x63FC6A",
+            "0x03AA0B",
+            "0x1CCED6",
+            "0x128489",
+            "0x4777EF",
+            "0x1040B9",
+            "0x753096",
+            "0x31143F"
+        ]
+    },
+    {
+        "name": "Viridis",
+        "colors": [
+            "0xFDE725",
+            "0x9EDA3A",
+            "0x4BC26D",
+            "0x1FA187",
+            "0x277F8E",
+            "0x365B8D",
+            "0x46327F",
+            "0x570255"
+        ]
+    },
+    {
+        "name": "Hipster",
+        "colors": [
+            "0x8d0e6b",
+            "0x053434",
+            "0x008080",
+            "0x4d4208",
+            "0xcdad0a"
+        ]
+    },
+    {
+        "name": "HipsterDark",
+        "colors": [
+            "0x52083e",
+            "0x031e1e",
+            "0x004a4a",
+            "0x2D2605",
+            "0xcdad0a"
+        ]
+    },
+    {
+        "name": "Neon",
+        "colors": [
+            "0xffffff",
+            "0x0099cc",
+            "0xff0099"
+        ]
+    },
+    {
+        "name": "HotFire",
+        "colors": [
+            "0xbe1013",
+            "0xd23008",
+            "0xe45323",
+            "0xee771c",
+            "0xf6960e",
+            "0xffcd06",
+            "0xf6960e",
+            "0xee771c",
+            "0xe45323",
+            "0xd23008"
+        ]
+    },
+    {
+        "name": "JungleDark",
+        "colors": [
+            "0x184918",
+            "0x406a3a",
+            "0xb1a658",
+            "0xa28d33",
+            "0x6a6232",
+            "0xa28d33",
+            "0xb1a658",
+            "0x406a3a"
+        ]
+    },
+    {
+        "name": "Kitty",
+        "colors": [
+            "0x9f456b",
+            "0x4f7a9a",
+            "0xe6c84c"
+        ]
+    },
+    {
+        "name": "Lantern",
+        "colors": [
+            "0x000000",
+            "0x0D9A0D",
+            "0xFFFFFF"
+        ]
+    },
+    {
+        "name": "Lemming",
+        "colors": [
+            "0x000000",
+            "0x0000ff",
+            "0x00ff00",
+            "0xffffff"
+        ]
+    },
+    {
+        "name": "LemmingInv",
+        "colors": [
+            "0xffffff",
+            "0xffff00",
+            "0xff00ff",
+            "0x000000"
+        ]
+    },
+    {
+        "name": "MiamiVice",
+        "colors": [
+            "0x1be3ff",
+            "0xff82dc",
+            "0xffffff"
+        ]
+    },
+    {
+        "name": "Nightspell",
+        "colors": [
+            "0xEDEEBA",
+            "0xFEA81C",
+            "0xB20152",
+            "0x4B0B44",
+            "0x240F37"
+        ]
+    },
+    {
+        "name": "Wayyou",
+        "colors": [
+            "0x1C2130",
+            "0x028F76",
+            "0xB3E099",
+            "0xFFEAAD",
+            "0xD14334"
+        ]
+    },
+    {
+        "name": "Weparted",
+        "colors": [
+            "0x027B7F",
+            "0xFFA588",
+            "0xD62957",
+            "0xBF1E62",
+            "0x572E4F"
+        ]
+    },
+    {
+        "name": "B&W",
+        "stops": [
+            {
+                "pos": 0.0,
+                "color": "0x000000"
+            },
+            {
+                "pos": 1.0,
+                "color": "0xffffff"
+            }
+        ]
+    },
+    {
+        "name": "B&G",
+        "stops": [
+            {
+                "pos": 0.0,
+                "color": "0x000000"
+            },
+            {
+                "pos": 1.0,
+                "color": "0x8f8f8f"
+            }
+        ]
+    },
+    {
+        "name": "Default",
+        "stops": [
+            {
+                "pos": 0.0,
+                "color": "0xfebc08"
+            },
+            {
+                "pos": 0.3,
+                "color": "0xdaf9fe"
+            },
+            {
+                "pos": 1.0,
+                "color": "0x010662"
+            }
+        ]
+    },
+    {
+        "name": "EarthAndSky",
+        "stops": [
+            {
+                "pos": 0.00,
+                "color": "0xffffff"
+            },
+            {
+                "pos": 0.13,
+                "color": "0xffff00"
+            },
+            {
+                "pos": 0.46,
+                "color": "0xff3300"
+            },
+            {
+                "pos": 0.76,
+                "color": "0x000099"
+            },
+            {
+                "pos": 0.90,
+                "color": "0x0066ff"
+            },
+            {
+                "pos": 1.00,
+                "color": "0xffffff"
+            }
+        ]
+    },
+    {
+        "name": "EarthAndSkyInv",
+        "stops": [
+            {
+                "pos": 0.00,
+                "color": "0x0000ff"
+            },
+            {
+                "pos": 0.46,
+                "color": "0x00ccff"
+            },
+            {
+                "pos": 0.86,
+                "color": "0xffff66"
+            },
+            {
+                "pos": 1.00,
+                "color": "0xff9900"
+            }
+        ]
+    },
+    {
+        "name": "Seashore",
+        "stops": [
+            {
+                "pos": 0.00,
+                "color": "0xC9FEC2"
+            },
+            {
+                "pos": 0.16,
+                "color": "0xE4E4A7"
+            },
+            {
+                "pos": 0.33,
+                "color": "0xF15020"
+            },
+            {
+                "pos": 0.50,
+                "color": "0x841C17"
+            },
+            {
+                "pos": 0.66,
+                "color": "0x0574AE"
+            },
+            {
+                "pos": 0.83,
+                "color": "0x89D2D0"
+            },
+            {
+                "pos": 1.00,
+                "color": "0xC9FEC2"
+            }
+        ]
+    },
+    {
+        "name": "Pastell",
+        "stops": [
+            {
+                "pos": 0.00,
+                "color": "0xCDD0D1"
+            },
+            {
+                "pos": 0.18,
+                "color": "0x6F85FF"
+            },
+            {
+                "pos": 0.42,
+                "color": "0xFF5B94"
+            },
+            {
+                "pos": 0.63,
+                "color": "0xFFFF84"
+            },
+            {
+                "pos": 0.86,
+                "color": "0x8BEE91"
+            },
+            {
+                "pos": 1.00,
+                "color": "0xCDD0D1"
+            }
+        ]
+    },
+    {
+        "name": "PastellInv",
+        "stops": [
+            {
+                "pos": 0.00,
+                "color": "0x907a00"
+            },
+            {
+                "pos": 0.42,
+                "color": "0x00a46b"
+            },
+            {
+                "pos": 0.63,
+                "color": "0x00007b"
+            },
+            {
+                "pos": 1.00,
+                "color": "0x74116e"
+            }
+        ]
+    },
+    {
+        "name": "Dark",
+        "stops": [
+            {
+                "pos": 0.00,
+                "color": "0xA80000"
+            },
+            {
+                "pos": 0.18,
+                "color": "0x004D95"
+            },
+            {
+                "pos": 0.39,
+                "color": "0xD06912"
+            },
+            {
+                "pos": 0.57,
+                "color": "0x007C2A"
+            },
+            {
+                "pos": 0.78,
+                "color": "0x4B23BF"
+            },
+            {
+                "pos": 1.00,
+                "color": "0xA80000"
+            }
+        ]
+    },
+    {
+        "name": "Darker",
+        "stops": [
+            {
+                "pos": 0.00,
+                "color": "0x700000"
+            },
+            {
+                "pos": 0.18,
+                "color": "0x003363"
+            },
+            {
+                "pos": 0.39,
+                "color": "0x8a460c"
+            },
+            {
+                "pos": 0.57,
+                "color": "0x00521c"
+            },
+            {
+                "pos": 0.78,
+                "color": "0x32177f"
+            },
+            {
+                "pos": 1.00,
+                "color": "0x700000"
+            }
+        ]
+    },
+    {
+        "name": "HotAndCold",
+        "stops": [
+            {
+                "pos": 0.00,
+                "color": "0xFFFFFF"
+            },
+            {
+                "pos": 0.16,
+                "color": "0x0066FF"
+            },
+            {
+                "pos": 0.50,
+                "color": "0x333333"
+            },
+            {
+                "pos": 0.84,
+                "color": "0xFF00CC"
+            },
+            {
+                "pos": 1.00,
+                "color": "0xFFFFFF"
+            }
+        ]
+    },
+    {
+        "name": "Fire",
+        "stops": [
+            {
+                "pos": 0.00,
+                "color": "0x000000"
+            },
+            {
+                "pos": 0.10,
+                "color": "0x5f0809"
+            },
+            {
+                "pos": 0.14,
+                "color": "0x5f0809"
+            },
+            {
+                "pos": 0.29,
+                "color": "0xbe1013"
+            },
+            {
+                "pos": 0.43,
+                "color": "0xd23008"
+            },
+            {
+                "pos": 0.57,
+                "color": "0xe45323"
+            },
+            {
+                "pos": 0.71,
+                "color": "0xee771c"
+            },
+            {
+                "pos": 0.86,
+                "color": "0xf6960e"
+            },
+            {
+                "pos": 1.00,
+                "color": "0xffcd06"
+            }
+        ]
+    }
+]

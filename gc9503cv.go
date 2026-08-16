@@ -18,7 +18,7 @@ const (
 	defSCKPinName  = "GPIO24"
 	defCSPinName   = "GPIO25"
 	defRSTPinName  = "GPIO26"
-	defFBDevName   = "/dev/fb1"
+	defFBDevName   = "/dev/fb2"
 
 	xOffset   = 60
 	yOffset   = 0
@@ -213,6 +213,28 @@ func (d *GC9503CV) PartialArea(rect image.Rectangle) {
 	d.DataArray(buffer)
 }
 
+func (d *GC9503CV) Matrix() (*geom.Matrix) {
+	m := geom.Identity()
+	switch d.rot {
+	case Rot000:
+	case Rot090:
+		m = m.Translate(d.dispBounds.SW().ToFloat())
+		m = m.Rotate(3.0 * math.Pi / 2.0)
+	case Rot180:
+		m = m.Translate(d.dispBounds.SE().ToFloat())
+		m = m.Rotate(math.Pi)
+	case Rot270:
+		m = m.Translate(d.dispBounds.NE().ToFloat())
+		m = m.Rotate(math.Pi / 2.0)
+	default:
+		log.Fatal("unknown rotation!")
+	}
+	offset := d.DrawBounds().Min
+	m = m.Translate(offset.ToFloat())
+	return m
+}
+
+/*
 func (d *GC9503CV) Canvas() (canv *Canvas) {
 	canv = newCanvas(d.dispBounds.Size())
 	switch d.rot {
@@ -233,6 +255,7 @@ func (d *GC9503CV) Canvas() (canv *Canvas) {
 	canv.GC.Translate(offset.ToFloat().AsCoord())
 	return canv
 }
+*/
 
 func (d *GC9503CV) Send(img *iliimg.ILIImage) {
 	//log.Printf("Bounds of the image: %v", img.Bounds())

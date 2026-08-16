@@ -1,0 +1,110 @@
+package adagui
+
+import (
+	"embed"
+	"image"
+	"log"
+	"path"
+	"github.com/stefan-muehlebach/adatft"
+	"github.com/stefan-muehlebach/gg"
+	//"github.com/stefan-muehlebach/gg/colors"
+	"github.com/stefan-muehlebach/gg/geom"
+)
+
+//go:embed cursors/*
+var cursorFiles embed.FS
+
+// Dieser Typ steht fuer das SPI Interface zum STMPE - dem Touchscreen.
+type Pointer struct {
+	adatft.Pointer
+	Cursor *Cursor
+}
+
+// Funktionen
+func OpenPointer() *Pointer {
+	p := &Pointer{}
+	p.Pointer = *adatft.OpenPointer()
+	p.Cursor = OpenCursor("left_ptr.png", geom.Point{4, 4})
+	return p
+}
+
+func (p *Pointer) Draw(gc *gg.Context) {
+    pt := p.Pos.Sub(p.Cursor.hotspot)
+    gc.DrawImage(p.Cursor.img, pt.X, pt.Y)
+	log.Printf("Pointer.Draw()")
+	log.Printf("  p.Pos    : %v", p.Pos)
+	log.Printf("  pt       : %v", pt)
+}
+
+/*
+const (
+    cursorSize = 50.0
+    arrowSize  = 10.0
+	sizeStep   =  5.0
+)
+
+func (p *Pointer) Draw(gc *gg.Context) {
+	gc.SetStrokeWidth(2.0)
+    if p.LeftBtn >= 1 {
+        gc.SetStrokeColor(colors.Crimson)
+    } else {
+        gc.SetStrokeColor(colors.White)
+    }
+    if p.RightBtn >= 1 {
+        gc.SetFillColor(colors.GoLightBlue.Alpha(0.5))
+    } else {
+        gc.SetFillColor(colors.Transparent)
+    }
+    x, y := p.Pos.X, p.Pos.Y
+    gc.DrawLine(x, y-cursorSize-arrowSize, x, y+cursorSize)
+    gc.DrawLine(x-cursorSize, y, x+cursorSize, y)
+    gc.MoveTo(x-0.75*arrowSize, y-cursorSize)
+    gc.LineTo(x, y-cursorSize-arrowSize)
+    gc.LineTo(x+0.75*arrowSize, y-cursorSize)
+    gc.Stroke()
+    for r := float64(p.Wheel); r > 0.0; r -= sizeStep {
+		if p.MiddleBtn >= 1 {
+			gc.DrawRectangle(x-r, y-r, 2*r, 2*r)
+			gc.FillStroke()
+		} else {
+        	gc.DrawCircle(x, y, r)
+        	gc.FillStroke()
+		}
+    }
+}
+*/
+
+//-----------------------------------------------------------------------------
+
+const (
+	cursorDir = "cursors"
+)
+
+type Cursor struct {
+    img image.Image
+    hotspot geom.Point
+}
+
+func OpenCursor(fileName string, hotspot geom.Point) *Cursor {
+    c := &Cursor{}
+    fh, err := cursorFiles.Open(path.Join(cursorDir, fileName))
+    if err != nil {
+        log.Fatalf("Couldn't open image file: %v", err)
+    }
+    defer fh.Close()
+    c.img, _, err = image.Decode(fh)
+    if err != nil {
+        log.Fatalf("Couldn't decode image data: %v", err)
+    }
+    c.hotspot = hotspot
+    return c
+}   
+
+var (
+	LeftPointer  = OpenCursor("left_ptr.png", geom.Point{4, 4})
+	RightPointer = OpenCursor("right_ptr.png", geom.Point{27, 4})
+	Cross        = OpenCursor("cross.png", geom.Point{15, 15})
+	Crosshair    = OpenCursor("crosshair.png", geom.Point{15, 15})
+	Ibeam        = OpenCursor("ibeam.png", geom.Point{13, 24})
+)
+

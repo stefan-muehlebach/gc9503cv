@@ -1,0 +1,276 @@
+/dts-v1/;
+
+/ {
+	compatible = "brcm,bcm2835";
+
+	__fixups__ {
+		chosen = "/fragment@108:target:0";
+		dpi = "/fragment@101:target:0", "/fragment@90:target:0", "/fragment@91:target:0", "/fragment@93:target:0";
+		dpi_16bit_cpadhi_gpio0 = "/fragment@93/__dormant__:pinctrl-0:0";
+		dpi_18bit_cpadhi_gpio0 = "/fragment@90/__dormant__:pinctrl-0:0";
+		dpi_18bit_gpio0 = "/fragment@91/__dormant__:pinctrl-0:0";
+		gpio = "/fragment@103/__dormant__/backlight:gpios:0", "/fragment@107:target:0";
+		pwm = "/fragment@105/__dormant__/backlight_pwm:pwms:0", "/fragment@106:target:0";
+	};
+
+	__local_fixups__ {
+
+		__overrides__ {
+			backlight-def-brightness = <0x00>;
+			backlight-gpio = <0x0d>;
+			backlight-pwm-chan = <0x00>;
+			backlight-pwm-func = <0x00>;
+			backlight-pwm-gpio = <0x00>;
+			rotate = <0x00>;
+		};
+
+		fragment@0 {
+			target = <0x00>;
+		};
+
+		fragment@1 {
+			target = <0x00>;
+		};
+
+		fragment@100 {
+
+			__overlay__ {
+
+				panel {
+
+					port {
+
+						endpoint {
+							remote-endpoint = <0x00>;
+						};
+					};
+				};
+			};
+		};
+
+		fragment@101 {
+
+			__overlay__ {
+
+				port {
+
+					endpoint {
+						remote-endpoint = <0x00>;
+					};
+				};
+			};
+		};
+
+		fragment@102 {
+			target = <0x00>;
+
+			__dormant__ {
+				backlight = <0x00>;
+			};
+		};
+
+		fragment@104 {
+			target = <0x00>;
+
+			__dormant__ {
+				backlight = <0x00>;
+			};
+		};
+
+		fragment@106 {
+
+			__dormant__ {
+				pinctrl-0 = <0x00>;
+			};
+		};
+
+		fragment@2 {
+			target = <0x00>;
+		};
+	};
+
+	__overrides__ {
+		at056tn53v1 = "", "", "", "", "+0+90";
+		backlight-def-brightness = [00 00 00 05 64 65 66 61 75 6c 74 2d 62 72 69 67 68 74 6e 65 73 73 2d 6c 65 76 65 6c 3a 30 00];
+		backlight-gpio = [00 00 00 00 2b 31 30 32 2b 31 30 33 00 00 00 00 04 67 70 69 6f 73 3a 34 00];
+		backlight-pwm = "", "", "", "", "+104+105+106+107+108";
+		backlight-pwm-chan = [00 00 00 05 70 77 6d 73 3a 34 00];
+		backlight-pwm-func = <0x06 0x6272636d 0x2c66756e 0x6374696f 0x6e3a3000>;
+		backlight-pwm-gpio = <0x06 0x6272636d 0x2c70696e 0x733a3000>;
+		kippah-7inch = "", "", "", "", "+1+91";
+		mzp280 = "", "", "", "", "+2+93";
+		rotate = [00 00 00 03 72 6f 74 61 74 69 6f 6e 3a 30 00];
+	};
+
+	__symbols__ {
+		backlight = "/fragment@103/__dormant__/backlight";
+		backlight_pwm = "/fragment@105/__dormant__/backlight_pwm";
+		dpi_node = "/fragment@101/__overlay__";
+		dpi_out = "/fragment@101/__overlay__/port/endpoint";
+		panel = "/fragment@100/__overlay__/panel";
+		panel_in = "/fragment@100/__overlay__/panel/port/endpoint";
+		pwm_pins = "/fragment@107/__dormant__/pwm_pins";
+	};
+
+	fragment@0 {
+		target = <0x03>;
+
+		__dormant__ {
+			compatible = "innolux,at056tn53v1", "simple-panel";
+		};
+	};
+
+	fragment@1 {
+		target = <0x03>;
+
+		__dormant__ {
+			compatible = "ontat,yx700wv03", "simple-panel";
+		};
+	};
+
+	fragment@100 {
+		target-path = "/";
+
+		__overlay__ {
+
+			panel {
+				phandle = <0x03>;
+				rotation = <0x00>;
+
+				port {
+
+					endpoint {
+						phandle = <0x02>;
+						remote-endpoint = <0x01>;
+					};
+				};
+			};
+		};
+	};
+
+	fragment@101 {
+		target = <0xffffffff>;
+
+		__overlay__ {
+			phandle = <0x07>;
+			pinctrl-names = "default";
+			status = "okay";
+
+			port {
+
+				endpoint {
+					phandle = <0x01>;
+					remote-endpoint = <0x02>;
+				};
+			};
+		};
+	};
+
+	fragment@102 {
+		target = <0x03>;
+
+		__dormant__ {
+			backlight = <0x04>;
+		};
+	};
+
+	fragment@103 {
+		target-path = "/";
+
+		__dormant__ {
+
+			backlight {
+				compatible = "gpio-backlight";
+				gpios = <0xffffffff 0xff 0x00>;
+				phandle = <0x04>;
+			};
+		};
+	};
+
+	fragment@104 {
+		target = <0x03>;
+
+		__dormant__ {
+			backlight = <0x05>;
+		};
+	};
+
+	fragment@105 {
+		target-path = "/";
+
+		__dormant__ {
+
+			backlight_pwm {
+				brightness-levels = <0x00 0x06 0x08 0x0c 0x10 0x18 0x20 0x28 0x30 0x40 0x60 0x80 0xa0 0xc0 0xe0 0xff>;
+				compatible = "pwm-backlight";
+				default-brightness-level = <0x10>;
+				phandle = <0x05>;
+				pwms = <0xffffffff 0x00 0x30d40 0x00>;
+			};
+		};
+	};
+
+	fragment@106 {
+		target = <0xffffffff>;
+
+		__dormant__ {
+			assigned-clock-rates = <0xf4240>;
+			pinctrl-0 = <0x06>;
+			pinctrl-names = "default";
+			status = "okay";
+		};
+	};
+
+	fragment@107 {
+		target = <0xffffffff>;
+
+		__dormant__ {
+
+			pwm_pins {
+				brcm,function = <0x02>;
+				brcm,pins = <0x12>;
+				phandle = <0x06>;
+			};
+		};
+	};
+
+	fragment@108 {
+		target = <0xffffffff>;
+
+		__dormant__ {
+			bootargs = "snd_bcm2835.enable_headphones=0";
+		};
+	};
+
+	fragment@2 {
+		target = <0x03>;
+
+		__dormant__ {
+			compatible = "geekworm,mzp280", "simple-panel";
+		};
+	};
+
+	fragment@90 {
+		target = <0xffffffff>;
+
+		__dormant__ {
+			pinctrl-0 = <0xffffffff>;
+		};
+	};
+
+	fragment@91 {
+		target = <0xffffffff>;
+
+		__dormant__ {
+			pinctrl-0 = <0xffffffff>;
+		};
+	};
+
+	fragment@93 {
+		target = <0xffffffff>;
+
+		__dormant__ {
+			pinctrl-0 = <0xffffffff>;
+		};
+	};
+};

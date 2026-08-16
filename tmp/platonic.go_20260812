@@ -1,15 +1,14 @@
 package main
 
 import (
-	"image"
-	"image/draw"
+	"fmt"
 	"math"
 	"math/rand/v2"
 	"slices"
 	"time"
 	"github.com/stefan-muehlebach/gg"
 	"github.com/stefan-muehlebach/gg/colors"
-    "gc9503cv/gc9503cv/geom"
+	"github.com/stefan-muehlebach/gg/geom"
 )
 
 const (
@@ -17,22 +16,14 @@ const (
 )
 
 type PlatonicAnim struct {
-	callbackEmbed
-	gc *gg.Context
-	bounds geom.Rectangle[int]
-	m0  Matrix
+	m0  MatrixSlc
 	objList []Object3D
 	alpha, dAlpha, beta, dBeta    float64
 	minZoom, maxZoom, zoom, dZoom float64
 }
 
-func NewPlatonicAnimation(bounds geom.Rectangle[int],
-		numDots int) *PlatonicAnim {
+func NewPlatonicAnimation(numDots int, rect geom.Rectangle) *PlatonicAnim {
 	a := &PlatonicAnim{}
-
-    a.bounds = bounds
-    a.gc = gg.NewContext(a.bounds.Dx(), a.bounds.Dy())
-    rect := a.bounds.Sub(a.bounds.Min).ToFloat()
 
 	if numDots <= 0 {
 		numDots = defNumDots
@@ -40,15 +31,14 @@ func NewPlatonicAnimation(bounds geom.Rectangle[int],
 
 	mp := rect.Center()
 	zero := NewVector(0.0, 0.0, 0.0)
-	ex := NewVector(100.0, 0.0, 0.0)
+	//ex := NewVector(100.0, 0.0, 0.0)
 	ey := NewVector(0.0, 100.0, 0.0)
-	ez := NewVector(0.0, 0.0, 100.0)
+	//ez := NewVector(0.0, 0.0, 100.0)
 
 	a.objList = make([]Object3D, 0)
-	a.objList = append(a.objList, NewSegment(zero, ex, colors.Red, 4.0))
-	a.objList = append(a.objList, NewSegment(zero, ey, colors.Green, 4.0))
-	a.objList = append(a.objList, NewSegment(zero, ez, colors.Blue, 4.0))
-
+	//a.objList = append(a.objList, NewSegment(zero, ex, colors.Red, 4.0))
+	//a.objList = append(a.objList, NewSegment(zero, ey, colors.Green, 4.0))
+	//a.objList = append(a.objList, NewSegment(zero, ez, colors.Blue, 4.0))
     obj := NewPlatonicSolid(TetraederPoints, TetraederFaces, ey.Neg().Mul(4),
 		100.0, colors.Plum, 3.0)
 	a.objList = append(a.objList, obj)
@@ -80,21 +70,12 @@ func NewPlatonicAnimation(bounds geom.Rectangle[int],
 		a.objList = append(a.objList, f)
 	}
 
-/*
-	obj := NewPlatonicSolid(SwissPoints, SwissFaces, zero,
-		300.0, colors.LightPink, 3.0)
-	obj.SetHoles(SwissHoles)
-	a.objList = append(a.objList, obj)
-	for _, f := range obj.FaceList() {
-		a.objList = append(a.objList, f)
-	}
-*/
 	//a.objList = append(a.objList, NewCloud(0.0, 100.0, 0.0, 50.0,
 	//	numDots, colors.YellowGreen, 4.0)...)
 
-	a.m0 = Identity().
-		Mul(Scale(NewVector(1.0, -1.0, 1.0))).
-		Mul(Translate(NewVector(mp.X, -mp.Y, 0.0)))
+	a.m0 = IdentitySlc().
+		Multiply(ScaleSlc(NewVector(1.0, -1.0, 1.0))).
+		Multiply(TranslateSlc(NewVector(mp.X, -mp.Y, 0.0)))
 
 	a.dAlpha = math.Pi / 162.0
 	a.dBeta = math.Pi / 106.0
@@ -107,16 +88,16 @@ func NewPlatonicAnimation(bounds geom.Rectangle[int],
 	return a
 }
 
-func (a *PlatonicAnim) Init() {
-	a.alpha = 0.0 // math.Pi / 12.0
-	a.beta = 0.0 // math.Pi / 18.0
+func (a *PlatonicAnim) Init(gc *gg.Context) {
+	a.alpha = math.Pi / 12.0
+	a.beta = math.Pi / 18.0
 }
 
-func (a *PlatonicAnim) Update(dt time.Duration) {
+func (a *PlatonicAnim) Animate(dt time.Duration) {
 	m := a.m0.
-		//Mul(Scale(NewVector(a.zoom, a.zoom, 1.0))).
-		Mul(RotateX(a.alpha)).
-		Mul(RotateY(a.beta))
+		//Multiply(Scale(NewVector(a.zoom, a.zoom, 1.0))).
+		Multiply(RotateXSlc(a.alpha)).
+		Multiply(RotateYSlc(a.beta))
 	for _, obj := range a.objList {
 		obj.Transform(m)
 	}
@@ -135,8 +116,7 @@ func (a *PlatonicAnim) Update(dt time.Duration) {
 	//}
 }
 
-func (a *PlatonicAnim) Draw(img *image.RGBA) {
-	a.gc.Clear(colors.Black)
+func (a *PlatonicAnim) Draw(gc *gg.Context) {
 	slices.SortFunc(a.objList, func(a, b Object3D) int {
 		if a.Z() < b.Z() {
 			return -1
@@ -147,16 +127,14 @@ func (a *PlatonicAnim) Draw(img *image.RGBA) {
 		}
 	})
 	for _, obj := range a.objList {
-		obj.Draw(a.gc)
+		obj.Draw(gc)
 	}
-    draw.Draw(img, a.bounds.ToInt(), a.gc.Image().(*image.RGBA),
-        image.Point{}, draw.Over)
 }
 
 //----------------------------------------------------------------------------
 
 type Object3D interface {
-	Transform(m Matrix)
+	Transform(m MatrixSlc)
 	Draw(gc *gg.Context)
 	Z() float64
 }
@@ -327,57 +305,53 @@ var (
 	a5 = f5 * 16.0
 	b5 = f5 * 10.0
 	c5 = f5 *  3.0
-	d5 = f5 *  5.0
 
 	SwissPoints = []Vector{
-		// Front and Back
-		Vector{a5, a5, -d5},
-		Vector{-a5, a5, -d5},
-		Vector{-a5, -a5, -d5},
-		Vector{a5, -a5, -d5},
+		Vector{c5, -a5, -a5},
+		Vector{c5, a5, -a5},
+		Vector{-c5, a5, -a5},
+		Vector{-c5, -a5, -a5},
 
-		// Sides
-		Vector{a5, a5, d5},
-		Vector{-a5, a5, d5},
-		Vector{-a5, -a5, d5},
-		Vector{a5, -a5, d5},
+		Vector{c5, -a5, a5},
+		Vector{c5, a5, a5},
+		Vector{-c5, a5, a5},
+		Vector{-c5, -a5, a5},
 
-		Vector{-b5, -c5, -d5},
-		Vector{-b5,  c5, -d5},
-		Vector{-c5, c5, -d5},
-		Vector{-c5, b5, -d5},
-		Vector{c5, b5, -d5},
-		Vector{c5, c5, -d5},
-		Vector{b5, c5, -d5},
-		Vector{b5, -c5, -d5},
-		Vector{c5, -c5, -d5},
-		Vector{c5, -b5, -d5},
-		Vector{-c5, -b5, -d5},
-		Vector{-c5, -c5, -d5},
+		Vector{c5, -c5, -b5},
+		Vector{c5,  c5, -b5},
+		Vector{c5, c5, -c5},
+		Vector{c5, b5, -c5},
+		Vector{c5, b5, c5},
+		Vector{c5, c5, c5},
+		Vector{c5, c5, b5},
+		Vector{c5, -c5, b5},
+		Vector{c5, -c5, c5},
+		Vector{c5, -b5, c5},
+		Vector{c5, -b5, -c5},
+		Vector{c5, -c5, -c5},
 
-		Vector{-b5, -c5, d5},
-		Vector{-b5,  c5, d5},
-		Vector{-c5, c5, d5},
-		Vector{-c5, b5, d5},
-		Vector{c5, b5, d5},
-		Vector{c5, c5, d5},
-		Vector{b5, c5, d5},
-		Vector{b5, -c5, d5},
-		Vector{c5, -c5, d5},
-		Vector{c5, -b5, d5},
-		Vector{-c5, -b5, d5},
-		Vector{-c5, -c5, d5},
+		Vector{-c5, -c5, -b5},
+		Vector{-c5,  c5, -b5},
+		Vector{-c5, c5, -c5},
+		Vector{-c5, b5, -c5},
+		Vector{-c5, b5, c5},
+		Vector{-c5, c5, c5},
+		Vector{-c5, c5, b5},
+		Vector{-c5, -c5, b5},
+		Vector{-c5, -c5, c5},
+		Vector{-c5, -b5, c5},
+		Vector{-c5, -b5, -c5},
+		Vector{-c5, -c5, -c5},
 	}
 	SwissFaces = [][]int{
-		{3, 2, 1, 0},
-		{4, 5, 6, 7},
-
 		{0, 1, 5, 4},
-		{1, 2, 6, 5},
 		{2, 3, 7, 6},
-		{3, 0, 4, 7},
 
-		// Coords of the 
+		{0, 3, 2, 1},
+		{1, 2, 6, 5},
+		{4, 5, 6, 7},
+		{0, 4, 7, 3},
+
 		{8, 9, 21, 20},
 		{9, 10, 22, 21},
 		{10, 11, 23, 22},
@@ -420,7 +394,7 @@ func NewPlatonicSolid(points []Vector, faces [][]int, pos Vector,
 
 	m0 := Scale(Vector{size, size, size})
 	m1 := Translate(pos)
-	m := m1.Mul(m0)
+	m := m1.Multiply(m0)
 	for i, pt := range points {
 		o.Pts[i] = m.Transform(pt)
 	}
@@ -430,17 +404,11 @@ func NewPlatonicSolid(points []Vector, faces [][]int, pos Vector,
 	return o
 }
 
-func (o *PlatonicSolid) SetHoles(idx [][]int) {
-    for i, holes := range idx {
-		o.Faces[i].Hole = holes
-	}
-}
-
 func (o *PlatonicSolid) FaceList() []*Face {
 	return o.Faces
 }
 
-func (o *PlatonicSolid) Transform(m Matrix) {
+func (o *PlatonicSolid) Transform(m MatrixSlc) {
 	o.ZMin = +math.MaxFloat64
 	o.ZMax = -math.MaxFloat64
 	for i, pt := range o.Pts {
@@ -468,9 +436,7 @@ func (o *PlatonicSolid) Draw(gc *gg.Context) {
 type Face struct {
 	o *PlatonicSolid
 	Idx     []int
-	Hole    []int
 	Norm, NormT Vector
-	ZMax, ZMin float64
 	LineWidth  float64
 	LineColor  colors.RGBA
 	FillColor  colors.RGBA
@@ -494,23 +460,16 @@ func NewFace(o *PlatonicSolid, idx []int, color colors.RGBA,
 	return f
 }
 
-func (f *Face) Transform(m Matrix) {
+func (f *Face) Transform(m MatrixSlc) {
 	f.NormT = m.Transform(f.Norm)
 }
 
 func (f *Face) Z() float64 {
-	f.ZMin = +math.MaxFloat64
-	f.ZMax = -math.MaxFloat64
+	s := 0.0
 	for _, idx := range f.Idx {
-		z := f.o.PtsT[idx].Z
-		if z < f.ZMin {
-			f.ZMin = z
-		}
-		if z > f.ZMax {
-			f.ZMax = z
-		}
+		s += f.o.PtsT[idx].Z
 	}
-	return f.ZMax
+	return s/float64(len(f.Idx))
 }
 
 func (f *Face) Draw(gc *gg.Context) {
@@ -525,14 +484,6 @@ func (f *Face) Draw(gc *gg.Context) {
 		gc.LineTo(f.o.PtsT[idx].X, f.o.PtsT[idx].Y)
 	}
 	gc.ClosePath()
-	if len(f.Hole) > 0 {
-		gc.SetFillRule(gg.FillRuleEvenOdd)
-		gc.MoveTo(f.o.PtsT[f.Hole[0]].X, f.o.PtsT[f.Hole[0]].Y)
-		for _, idx := range f.Hole[1:] {
-			gc.LineTo(f.o.PtsT[idx].X, f.o.PtsT[idx].Y)
-		}
-		gc.ClosePath()
-	}
 	gc.FillStroke()
 }
 
@@ -555,7 +506,7 @@ func NewDot(x, y, z float64, zMin, zMax float64, color colors.RGBA,
 	return d
 }
 
-func (d *Dot) Transform(m Matrix) {
+func (d *Dot) Transform(m MatrixSlc) {
 	d.PtT = m.Transform(d.Pt)
 }
 
@@ -587,7 +538,7 @@ func NewSegment(p0, p1 Vector, color colors.RGBA, width float64) *Segment {
 	return s
 }
 
-func (s *Segment) Transform(m Matrix) {
+func (s *Segment) Transform(m MatrixSlc) {
 	s.PtsT[0] = m.Transform(s.Pts[0])
 	s.PtsT[1] = m.Transform(s.Pts[1])
 }
@@ -627,4 +578,334 @@ type Mappable interface {
 func Map[I, O Mappable](valIn, lbIn, ubIn I, lbOut, ubOut O) (valOut O) {
 	return lbOut + O(valIn-lbIn)*(ubOut-lbOut)/O(ubIn-lbIn)
 }
+
+//-----------------------------------------------------------------------
+
+type Matrix struct {
+	M11, M12, M13, M14 float64
+	M21, M22, M23, M24 float64
+	M31, M32, M33, M34 float64
+}
+
+type MatrixSlc [12]float64
+
+type Matrix3 struct {
+	M11, M12, M13 float64
+	M21, M22, M23 float64
+}
+
+type Matrix3Slc [6]float64
+
+//----------------------------------------------------------------------------
+
+type ProjMatrix struct {
+	M11, M22, M33, M34, M43 float64
+}
+
+func NewProjMatrix(near, far float64) ProjMatrix {
+	return ProjMatrix{1.0, 1.0, (near+far)/near, -far, 1.0/near}
+}
+
+func (m ProjMatrix) Project(v Vector) Vector {
+	w := Vector{m.M11*v.X, m.M22*v.Y, m.M33*v.Z - m.M34}
+	f := m.M43 * v.Z
+	return w.Div(f)
+}
+
+var (
+	left, right = -500.0,  500.0
+	top, bottom =  180.0, -180.0
+	near, far   = -10.0,  10.0
+
+	PM = NewProjMatrix(near, far)
+)
+
+//----------------------------------------------------------------------------
+
+type Vector struct {
+	X, Y, Z float64
+}
+
+func NewVector(x, y, z float64) Vector {
+	return Vector{x, y, z}
+}
+
+func (v Vector) Add(w Vector) Vector {
+	return Vector{v.X + w.X, v.Y + w.Y, v.Z + w.Z}
+}
+
+func (v Vector) Sub(w Vector) Vector {
+	return Vector{v.X - w.X, v.Y - w.Y, v.Z - w.Z}
+}
+
+func (v Vector) Mul(k float64) Vector {
+	return Vector{k * v.X, k * v.Y, k * v.Z}
+}
+
+func (v Vector) Div(k float64) Vector {
+	return Vector{v.X / k, v.Y / k, v.Z / k}
+}
+
+func (v Vector) Neg() Vector {
+	return Vector{-v.X, -v.Y, -v.Z}
+}
+
+func (v Vector) Dot(w Vector) float64 {
+	return v.X*w.X + v.Y*w.Y + v.Z*w.Z
+}
+
+func (v Vector) Cross(w Vector) Vector {
+	return Vector{
+		v.Y*w.Z - w.Y*v.Z,
+		v.Z*w.X - w.Z*v.X,
+		v.X*w.Y - w.X*v.Y,
+	}
+}
+
+func (v Vector) Abs() float64 {
+	return math.Sqrt(v.X*v.X + v.Y*v.Y + v.Z*v.Z)
+}
+
+//----------------------------------------------------------------------------
+
+func Identity() Matrix {
+	return Matrix{
+		1, 0, 0, 0,
+		0, 1, 0, 0,
+		0, 0, 1, 0,
+	}
+}
+
+func IdentitySlc() MatrixSlc {
+	return MatrixSlc{
+		1, 0, 0, 0,
+		0, 1, 0, 0,
+		0, 0, 1, 0,
+	}
+}
+
+func Translate(v Vector) Matrix {
+	return Matrix{
+		1, 0, 0, v.X,
+		0, 1, 0, v.Y,
+		0, 0, 1, v.Z,
+	}
+}
+
+func TranslateSlc(v Vector) MatrixSlc {
+	return MatrixSlc{
+		1, 0, 0, v.X,
+		0, 1, 0, v.Y,
+		0, 0, 1, v.Z,
+	}
+}
+
+func Scale(sv Vector) Matrix {
+	return Matrix{
+		sv.X, 0, 0, 0,
+		0, sv.Y, 0, 0,
+		0, 0, sv.Z, 0,
+	}
+}
+
+func ScaleSlc(sv Vector) MatrixSlc {
+	return MatrixSlc{
+		sv.X, 0, 0, 0,
+		0, sv.Y, 0, 0,
+		0, 0, sv.Z, 0,
+	}
+}
+
+func RotateX(angle float64) Matrix {
+	c := math.Cos(angle)
+	s := math.Sin(angle)
+	return Matrix{
+		1, 0, 0, 0,
+		0, c, -s, 0,
+		0, s, c, 0,
+	}
+}
+
+func RotateXSlc(angle float64) MatrixSlc {
+	c := math.Cos(angle)
+	s := math.Sin(angle)
+	return MatrixSlc{
+		1, 0, 0, 0,
+		0, c, -s, 0,
+		0, s, c, 0,
+	}
+}
+
+func RotateY(angle float64) Matrix {
+	c := math.Cos(angle)
+	s := math.Sin(angle)
+	return Matrix{
+		c, 0, -s, 0,
+		0, 1, 0, 0,
+		s, 0, c, 0,
+	}
+}
+
+func RotateYSlc(angle float64) MatrixSlc {
+	c := math.Cos(angle)
+	s := math.Sin(angle)
+	return MatrixSlc{
+		c, 0, -s, 0,
+		0, 1, 0, 0,
+		s, 0, c, 0,
+	}
+}
+
+func RotateZ(angle float64) Matrix {
+	c := math.Cos(angle)
+	s := math.Sin(angle)
+	return Matrix{
+		c, -s, 0, 0,
+		s, c, 0, 0,
+		0, 0, 1, 0,
+	}
+}
+
+func RotateZSlc(angle float64) MatrixSlc {
+	c := math.Cos(angle)
+	s := math.Sin(angle)
+	return MatrixSlc{
+		c, -s, 0, 0,
+		s, c, 0, 0,
+		0, 0, 1, 0,
+	}
+}
+
+func (a Matrix) Multiply(b Matrix) Matrix {
+	return Matrix{
+		a.M11*b.M11 + a.M12*b.M21 + a.M13*b.M31,
+		a.M11*b.M12 + a.M12*b.M22 + a.M13*b.M32,
+		a.M11*b.M13 + a.M12*b.M23 + a.M13*b.M33,
+		a.M11*b.M14 + a.M12*b.M24 + a.M13*b.M34 + a.M14,
+		a.M21*b.M11 + a.M22*b.M21 + a.M23*b.M31,
+		a.M21*b.M12 + a.M22*b.M22 + a.M23*b.M32,
+		a.M21*b.M13 + a.M22*b.M23 + a.M23*b.M33,
+		a.M21*b.M14 + a.M22*b.M24 + a.M23*b.M34 + a.M24,
+		a.M31*b.M11 + a.M32*b.M21 + a.M33*b.M31,
+		a.M31*b.M12 + a.M32*b.M22 + a.M33*b.M32,
+		a.M31*b.M13 + a.M32*b.M23 + a.M33*b.M33,
+		a.M31*b.M14 + a.M32*b.M24 + a.M33*b.M34 + a.M34,
+	}
+}
+
+func (a MatrixSlc) Multiply(b MatrixSlc) MatrixSlc {
+	return MatrixSlc{
+		a[0]*b[0] + a[1]*b[4] + a[2]*b[8],
+		a[0]*b[1] + a[1]*b[5] + a[2]*b[9],
+		a[0]*b[2] + a[1]*b[6] + a[2]*b[10],
+		a[0]*b[3] + a[1]*b[7] + a[2]*b[11] + a[3],
+		a[4]*b[0] + a[5]*b[4] + a[6]*b[8],
+		a[4]*b[1] + a[5]*b[5] + a[6]*b[9],
+		a[4]*b[2] + a[5]*b[6] + a[6]*b[10],
+		a[4]*b[3] + a[5]*b[7] + a[6]*b[11] + a[7],
+		a[8]*b[0] + a[9]*b[4] + a[10]*b[8],
+		a[8]*b[1] + a[9]*b[5] + a[10]*b[9],
+		a[8]*b[2] + a[9]*b[6] + a[10]*b[10],
+		a[8]*b[3] + a[9]*b[7] + a[10]*b[11] + a[11],
+	}
+}
+
+func (a Matrix) Det() float64 {
+	return a.M11*a.M22*a.M33 + a.M12*a.M23*a.M31 + a.M13*a.M21*a.M32 -
+		a.M11*a.M23*a.M32 - a.M12*a.M21*a.M33 - a.M13*a.M22*a.M31
+}
+
+func (a Matrix3) Det() float64 {
+	return a.M11*a.M22 - a.M12*a.M21
+}
+
+//func (a Matrix) Kof(i, j int) (float64)
+
+func (a Matrix) Inv() Matrix {
+	det := a.Det()
+	adj := Matrix{}
+	adj.M11 = Matrix3{
+		a.M22, a.M23, a.M24,
+		a.M32, a.M33, a.M34,
+	}.Det() / det
+	adj.M12 = -Matrix3{
+		a.M21, a.M23, a.M24,
+		a.M31, a.M33, a.M34,
+	}.Det() / det
+	adj.M13 = Matrix3{
+		a.M21, a.M22, a.M24,
+		a.M31, a.M32, a.M34,
+	}.Det() / det
+	adj.M14 = -Matrix3{
+		a.M21, a.M22, a.M23,
+		a.M31, a.M32, a.M33,
+	}.Det() / det
+
+	adj.M21 = -Matrix3{
+		a.M12, a.M13, a.M14,
+		a.M32, a.M33, a.M34,
+	}.Det() / det
+	adj.M22 = Matrix3{
+		a.M11, a.M13, a.M14,
+		a.M31, a.M33, a.M34,
+	}.Det() / det
+	adj.M23 = -Matrix3{
+		a.M11, a.M12, a.M14,
+		a.M31, a.M32, a.M34,
+	}.Det() / det
+	adj.M24 = Matrix3{
+		a.M11, a.M12, a.M13,
+		a.M31, a.M32, a.M33,
+	}.Det() / det
+
+	adj.M31 = Matrix3{
+		a.M12, a.M13, a.M14,
+		a.M22, a.M23, a.M24,
+	}.Det() / det
+	adj.M32 = -Matrix3{
+		a.M11, a.M13, a.M14,
+		a.M21, a.M23, a.M24,
+	}.Det() / det
+	adj.M33 = Matrix3{
+		a.M11, a.M12, a.M14,
+		a.M21, a.M22, a.M24,
+	}.Det() / det
+	adj.M34 = -Matrix3{
+		a.M11, a.M12, a.M13,
+		a.M21, a.M22, a.M23,
+	}.Det() / det
+
+	return Matrix{adj.M11, adj.M21, adj.M31, adj.M14,
+		adj.M12, adj.M22, adj.M32, adj.M24,
+		adj.M13, adj.M23, adj.M33, adj.M34,
+	}
+}
+
+func (a Matrix) Transform(v Vector) Vector {
+	return NewVector(
+		(a.M11*v.X + a.M12*v.Y + a.M13*v.Z + a.M14),
+		(a.M21*v.X + a.M22*v.Y + a.M23*v.Z + a.M24),
+		(a.M31*v.X + a.M32*v.Y + a.M33*v.Z + a.M34))
+}
+
+func (a MatrixSlc) Transform(v Vector) Vector {
+	return NewVector(
+		(a[0]*v.X + a[1]*v.Y + a[2]*v.Z + a[3]),
+		(a[4]*v.X + a[5]*v.Y + a[6]*v.Z + a[7]),
+		(a[8]*v.X + a[9]*v.Y + a[10]*v.Z + a[11]))
+}
+
+func (a Matrix) String() string {
+	return fmt.Sprintf("[%.4v %.4v %.4v %.4v]\n[%.4v %.4v %.4v %.4v]\n[%.4v %.4v %.4v %.4v]",
+		a.M11, a.M12, a.M13, a.M14,
+		a.M21, a.M22, a.M23, a.M24,
+		a.M31, a.M32, a.M33, a.M34)
+}
+
+func (a MatrixSlc) String() string {
+	return fmt.Sprintf("[%.4v %.4v %.4v %.4v]\n[%.4v %.4v %.4v %.4v]\n[%.4v %.4v %.4v %.4v]",
+		a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9],
+			a[10], a[11])
+}
+
 

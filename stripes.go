@@ -1,38 +1,42 @@
 package main
 
 import (
-	//"image"
+	"image"
+	"image/draw"
 	"math"
 	"time"
 	"github.com/stefan-muehlebach/gg"
 	"github.com/stefan-muehlebach/gg/colors"
-	//"github.com/stefan-muehlebach/gg/geom"
 	"gc9503cv/gc9503cv/geom"
 )
 
 type StripeAnim struct {
 	callbackEmbed
+	gc *gg.Context
 	colorList   []colors.RGBA
 	stripeWidth float64
+	bounds  geom.Rectangle[int]
 	off, size   geom.Point[int]
 	dt          float64
 }
 
-func NewStripeAnimation(colorList []colors.RGBA,
-		rect geom.Rectangle[int]) *StripeAnim {
+func NewStripeAnimation(bounds geom.Rectangle[int],
+		colorList []colors.RGBA) *StripeAnim {
 	a := &StripeAnim{}
 
+	a.bounds = bounds
+	a.gc = gg.NewContext(a.bounds.Dx(), a.bounds.Dy())
 	a.colorList = make([]colors.RGBA, len(colorList))
 	copy(a.colorList, colorList)
-	a.stripeWidth = float64(rect.Dx()) / float64(len(a.colorList))
-	a.off = rect.Min
-	a.size = rect.Size()
+	a.off = bounds.Min
+	a.size = bounds.Size()
+	a.stripeWidth = float64(a.size.X) / float64(len(a.colorList))
 	a.dt = 0.0
 
 	return a
 }
 
-func (a *StripeAnim) Init(gc *gg.Context) {
+func (a *StripeAnim) Init() {
 	a.dt = 0.0
 }
 
@@ -40,7 +44,7 @@ func (a *StripeAnim) Update(dt time.Duration) {
 	a.dt += 20.0
 }
 
-func (a *StripeAnim) Draw(gc *gg.Context) {
+func (a *StripeAnim) Draw(img *image.RGBA) {
 	for row := range a.size.Y {
 		t := (a.dt + float64(row)) / float64(a.size.Y-1)
 		t = math.Mod(t, 2.0)
@@ -60,7 +64,9 @@ func (a *StripeAnim) Draw(gc *gg.Context) {
 			if color.B == 0xFF {
 				color.B = val
 			}
-			gc.SetPixel(a.off.X+col, a.off.Y+row, color)
+			a.gc.SetPixel(col, row, color)
 		}
 	}
+	draw.Draw(img, a.bounds.ToInt(), a.gc.Image().(*image.RGBA),
+		image.Point{}, draw.Over)
 }

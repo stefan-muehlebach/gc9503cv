@@ -1,10 +1,13 @@
 package main
 
 import (
+	"image"
+	"image/draw"
 	"math/rand/v2"
 	"time"
 	"github.com/stefan-muehlebach/gg"
 	"github.com/stefan-muehlebach/gg/colors"
+    "gc9503cv/gc9503cv/geom"
 )
 
 const (
@@ -13,16 +16,22 @@ const (
 
 type PolygonAnim struct {
 	callbackEmbed
+	gc *gg.Context
+	bounds geom.Rectangle[int]
 	polyList []*Polygon
 }
 
-func NewPolygonAnimation(numObjs int, rect Rectangle) *PolygonAnim {
+func NewPolygonAnimation(bounds geom.Rectangle[int],
+		numObjs int) *PolygonAnim {
 	numEdges := 3
 	a := &PolygonAnim{}
 
+	a.bounds = bounds
+	a.gc = gg.NewContext(a.bounds.Dx(), a.bounds.Dy())
 	if numObjs <= 0 {
 		numObjs = defNumPolygons
 	}
+	rect := a.bounds.Sub(a.bounds.Min).ToFloat()
 	a.polyList = make([]*Polygon, numObjs)
 	for i := 0; i < numObjs; i++ {
 		a.polyList[i] = NewPolygon(numEdges, rect)
@@ -30,10 +39,10 @@ func NewPolygonAnimation(numObjs int, rect Rectangle) *PolygonAnim {
 	return a
 }
 
-func (a *PolygonAnim) Init(gc *gg.Context) {
-	gc.SetLineWidth(2.0)
-	gc.SetLineCapRound()
-	gc.SetLineJoinRound()
+func (a *PolygonAnim) Init() {
+	a.gc.SetLineWidth(2.0)
+	a.gc.SetLineCapRound()
+	a.gc.SetLineJoinRound()
 }
 
 func (a *PolygonAnim) Update(dt time.Duration) {
@@ -42,10 +51,13 @@ func (a *PolygonAnim) Update(dt time.Duration) {
 	}
 }
 
-func (a *PolygonAnim) Draw(gc *gg.Context) {
+func (a *PolygonAnim) Draw(img *image.RGBA) {
+	a.gc.Clear(colors.Black)
 	for _, p := range a.polyList {
-		p.Draw(gc)
+		p.Draw(a.gc)
 	}
+    draw.Draw(img, a.bounds.ToInt(), a.gc.Image().(*image.RGBA),
+        image.Point{}, draw.Over)
 }
 
 //-----------------------------------------------------------------------

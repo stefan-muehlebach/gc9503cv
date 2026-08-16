@@ -1,13 +1,12 @@
 package main
 
 import (
-	//"image"
+	"image"
+	"image/draw"
 	"log"
 	"time"
-	"fmt"
+	//"fmt"
 	"github.com/holoplot/go-evdev"
-	"github.com/stefan-muehlebach/gg"
-	// "github.com/stefan-muehlebach/gg/geom"
 	"gc9503cv/gc9503cv/geom"
 )
 
@@ -17,6 +16,7 @@ import (
 // rohen Ereginisse vom Touchscreen (Press, Drag, Release) diese Events zu
 // erzeugen.
 type MouseEventType uint32
+type MouseButtonType byte
 
 const (
 	// Mit Einfuehrung der Maus, wird dieses Event (fahren ohne eine Taste
@@ -47,7 +47,15 @@ const (
 	TypeClick
 	TypeDoubleClick
 	numEvents
+)
 
+const (
+	LeftButton MouseButtonType = (1 << iota)
+	MiddleButton
+	RightButton
+)
+
+const (
 	// TapDuration ist die Zeit, welche max. zwischen Press und Release
 	// vergehen darf, damit dieses Ereignis als Tap interpretiert wird.
 	ClickDuration = 200 * time.Millisecond
@@ -145,17 +153,18 @@ func (m *Mouse) SetCursor(cursor *Cursor) (old *Cursor) {
 	return
 }
 
-func (m *Mouse) Draw(gc *gg.Context) {
+func (m *Mouse) Draw(img *image.RGBA) {
 	if m.cursor == nil {
 		return
 	}
-    orig := m.Pos.Sub(m.cursor.hotspot)
-    gc.DrawImage(m.cursor.img, float64(orig.X), float64(orig.Y))
+    orig := m.Pos.Sub(m.cursor.hotspot).ToInt()
+	dstRect := m.cursor.img.Bounds().Add(orig).Add(img.Rect.Min)
+	draw.Draw(img, dstRect, m.cursor.img, image.Point{}, draw.Over)
 }
 
 func (m *Mouse) SetPosRange(rect geom.Rectangle[int]) {
 	m.posRange = rect
-	m.Pos = rect.Size().Div(2)
+	m.Pos = rect.Center()
 }
 
 func (m *Mouse) SetWheelRange(ini, min, max int) {
@@ -182,7 +191,6 @@ func (m *Mouse) WaitForEvent() MouseEvent {
 // Mit dem auskommentierten Code kann für Testzwecke dafür gesorgt werden,
 // dass bei einem Fehler ein Runtime-Panic ausgelöst wird.
 func (m *Mouse) enqueueEvent(ev MouseEvent) {
-	ev.Time = time.Now()
 	defer func() {
 		if x := recover(); x != nil {
 			log.Printf("Runtime panic: %v\n", x)
@@ -232,8 +240,6 @@ func NewMouseMoveEvent(step geom.Point[int]) MouseEventIface {
 
 func (m *Mouse) processEvents() {
 	var mev MouseEvent
-	var pressPos geom.Point[int]
-	var pressTime time.Time
 
 	for {
 		e, err := m.dev.ReadOne()
@@ -245,15 +251,15 @@ func (m *Mouse) processEvents() {
 			switch e.Code {
 			case evdev.REL_X:
 				m.Pos.X += int(e.Value)
-				if m.Pos.X < 0 {
-					m.Pos.X = 0
+				if m.Pos.X < m.posRange.Min.X {
+					m.Pos.X = m.posRange.Min.X
 				} else if m.Pos.X >= m.posRange.Max.X {
 					m.Pos.X = m.posRange.Max.X - 1
 				}
 			case evdev.REL_Y:
 				m.Pos.Y += int(e.Value)
-				if m.Pos.Y < 0 {
-					m.Pos.Y = 0
+				if m.Pos.Y < m.posRange.Min.Y {
+					m.Pos.Y = m.posRange.Min.Y
 				} else if m.Pos.Y >= m.posRange.Max.Y {
 					m.Pos.Y = m.posRange.Max.Y - 1
 				}
@@ -267,48 +273,66 @@ func (m *Mouse) processEvents() {
 			default:
 				continue
 			}
-			if m.LeftBtn != 0 || m.MiddleBtn != 0 || m.RightBtn != 0 {
+			if mev.Button > 0 {
 				mev.Type = TypeDrag
 			} else {
 				mev.Type = TypeMove
 			}
+			mev.Time = time.Now()
 			mev.Pos = m.Pos
 			mev.Wheel = m.Wheel
+			m.enqueueEvent(mev)
 
 		case evdev.EV_KEY:
-			switch e.Code {
-			case evdev.BTN_LEFT, evdev.BTN_MIDDLE, evdev.BTN_RIGHT:
-				if e.Value == 1 {
-					mev.Type = TypePress
-					pressPos = mev.Pos
-					pressTime = time.Now()
-				} else {
-					if pressPos.Distance(mev.Pos) < NearThreshold &&
-							time.Since(pressTime) < ClickDuration {
-						mev.Type = TypeClick
-					} else {
-						mev.Type = TypeRelease
-					}
-				}
+			if e.Value == 1 {
+				mev.Type = TypePress
+				mev.InitTime = time.Now()
+				mev.Time = mev.InitTime
+				mev.InitPos = m.Pos
+				mev.Pos = mev.InitPos
+				mev.LongPressed = false
 				switch e.Code {
 				case evdev.BTN_LEFT:
-					m.LeftBtn = e.Value
-				case evdev.BTN_MIDDLE:
-					m.MiddleBtn = e.Value
+					mev.Button = LeftButton
 				case evdev.BTN_RIGHT:
-					m.RightBtn = e.Value
+					mev.Button = RightButton
+				case evdev.BTN_MIDDLE:
+					mev.Button = MiddleButton
 				}
-				mev.LeftBtn = m.LeftBtn
-				mev.MiddleBtn = m.MiddleBtn
-				mev.RightBtn = m.RightBtn
-			default:
-				continue
-			}
 
+				go func() {
+					mevCopy := mev
+					time.Sleep(LongPressThreshold)
+					if (mev.Type == TypePress || mev.Type == TypeDrag) &&
+							mev.Button == mevCopy.Button &&
+							mev.InitPos.Distance(mev.Pos) < NearThreshold {
+						mev.LongPressed = true
+						mevCopy = mev
+						mevCopy.Type = TypeLongPress
+						mevCopy.Time = time.Now()
+						m.enqueueEvent(mevCopy)
+					}
+				}()
+				m.enqueueEvent(mev)
+
+			} else {
+				mev.Type = TypeRelease
+				mev.Time = time.Now()
+				mev.Pos = m.Pos
+				m.enqueueEvent(mev)
+
+				if mev.InitPos.Distance(mev.Pos) < NearThreshold &&
+						mev.Time.Sub(mev.InitTime) < ClickDuration {
+					//log.Printf("Click will be generated")
+					mev.Type = TypeClick
+					m.enqueueEvent(mev)
+				}
+				mev.Button = 0x00
+			}
 		default:
 			continue
 		}
-		m.enqueueEvent(mev)
+		//m.enqueueEvent(mev)
 	}
 }
 
@@ -342,17 +366,19 @@ type Event struct {
 // 'Event' repraesentiert.
 type MouseEvent struct {
 	Type                         MouseEventType
-	Time                         time.Time
-	Pos                          geom.Point[int]
+	Time, InitTime               time.Time
+	Pos, InitPos                 geom.Point[int]
+	Button						 MouseButtonType
+	LongPressed bool
 	Wheel                        int
-	LeftBtn, MiddleBtn, RightBtn int32
+	//LeftBtn, MiddleBtn, RightBtn int32
 }
 
 // Fuer das Debugging implementiert Event das Stringer-Interface.
-func (evt MouseEvent) String() string {
-	return fmt.Sprintf("%v %s %v", evt.Type,
-		evt.Time.Format("15:04:05.000000"), evt.Pos)
-}
+//func (evt MouseEvent) String() string {
+//	return fmt.Sprintf("%v %s %v", evt.Type,
+//		evt.Time.Format("15:04:05.000000"), evt.Pos)
+//}
 
 // Alle Callback-Handler fuer die Ereignisse vom Touchscreen, muessen folgendes
 // Profil aufweisen.

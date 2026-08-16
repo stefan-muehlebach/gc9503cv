@@ -31,7 +31,7 @@ func main() {
 	var timeout time.Duration
 	var rotate RotationType
 	var numObjs int
-	var prog Prog
+	var applet Applet
 
 	flag.IntVar(&numObjs, "numObjs", 0, "Number of objects.")
 	flag.IntVar(&progIdx, "prog", 0, "Index of program to play.")
@@ -50,24 +50,24 @@ func main() {
 
 	app = NewApplication(disp)
 
-	log.Printf("screen bounds : %v", dispBounds)
-	log.Printf("drawing bounds: %v", drawBounds)
+	//log.Printf("screen bounds : %v", dispBounds)
+	//log.Printf("drawing bounds: %v", drawBounds)
 	
 	switch progIdx {
 	case 0:
-		prog = NewStripeAnimation(colorList, drawBounds)
+		applet = NewStripeAnimation(drawBounds, colorList)
 	case 1:
-		prog = NewPolygonAnimation(numObjs, drawRect.ToFloat())
+		applet = NewPolygonAnimation(drawBounds, numObjs)
 	case 2:
-		prog = NewCircleAnimation(numObjs, drawRect.ToFloat())
+		applet = NewCircleAnimation(drawBounds, numObjs)
 	case 3:
-		prog = NewPlatonicAnimation(numObjs, drawRect.ToFloat())
+		applet = NewPlatonicAnimation(drawBounds, numObjs)
 	case 4:
-		prog = NewGoColorAnimation(drawRect)
+		applet = NewGoColorAnimation(drawBounds)
 	}
-	app.AddProg(prog)
+	app.SetApplet(applet)
 
-	log.Print("Starting animation")
+	log.Printf("Starting Applet Nr. %d", progIdx)
 	app.Run(timeout)
 
 	app.PrintWatchStats()

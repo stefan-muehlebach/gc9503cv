@@ -4,16 +4,25 @@ import (
 	"image"
 	"log"
 	"time"
-	"github.com/stefan-muehlebach/gg"
 	"gc9503cv/gc9503cv/iliimg"
 )
 
+//----------------------------------------------------------------------------
+
+func IsSet(value, pattern MouseButtonType) (bool) {
+	if value & pattern != 0x00 {
+		return true
+	} else {
+		return false
+	}
+}
+
 //-----------------------------------------------------------------------------
 
-type Prog interface {
-    Init(gc *gg.Context)
+type Applet interface {
+    Init()
     Update(dt time.Duration)
-	Draw(gc *gg.Context)
+	Draw(img *image.RGBA)
 	OnInputEvent(ev MouseEvent)
 }
 
@@ -21,9 +30,9 @@ type Prog interface {
 
 type Application struct {
 	disp *GC9503CV
-	canv *Canvas
-	prog Prog
+	applet Applet
 	AnimWatch, DrawWatch, ConvWatch, SendWatch *Stopwatch
+	mainImg *image.RGBA
 	pixBuf *iliimg.ILIImage
 	mouse *Mouse
 	isRunning bool
@@ -33,11 +42,11 @@ func NewApplication(disp *GC9503CV) (*Application) {
 	a := &Application{}
 
 	a.disp = disp
-	a.canv = disp.Canvas()
 	a.AnimWatch = NewStopwatch()
 	a.DrawWatch = NewStopwatch()
 	a.ConvWatch = NewStopwatch()
 	a.SendWatch = NewStopwatch()
+	a.mainImg = image.NewRGBA(disp.DrawBounds().ToInt())
 	a.pixBuf = iliimg.NewILIImage(disp.DispBounds().ToInt())
 	a.pixBuf.SetLSBFirst()
 	a.mouse = OpenMouse()
@@ -46,10 +55,6 @@ func NewApplication(disp *GC9503CV) (*Application) {
 	a.mouse.SetCursor(LeftPtrCursor)
 
 	return a
-}
-
-func (a *Application) Canvas() *Canvas {
-	return a.canv
 }
 
 func (a *Application) PrintWatchStats() {
@@ -70,42 +75,32 @@ func (a *Application) PrintWatchStats() {
 	a.SendWatch.Reset()
 }
 
-func (a *Application) AddProg(prog Prog) {
-	a.prog = prog
+func (a *Application) SetApplet(applet Applet) {
+	a.applet = applet
 }
 
 func (a *Application) drawThread() {
 	dt := 30 * time.Millisecond
 	ticker := time.NewTicker(dt)
-	//subImgRect := a.disp.DispBounds().Inset(150, 300).ToInt()
 	defer ticker.Stop()
-	if a.prog != nil {
-		a.prog.Init(a.canv.GC)
-	}
+	a.applet.Init()
 	for range ticker.C {
 		if !a.isRunning {
 			break
 		}
 		a.AnimWatch.Start()
-		if a.prog != nil {
-			a.prog.Update(dt)
-		} else {
-			// a.canv.Update(dt)
-		}
+		a.applet.Update(dt)
 		a.AnimWatch.Stop()
+
 		a.DrawWatch.Start()
-		//a.canv.Clear(a.canv.BackColor)
-		if a.prog != nil {
-			a.prog.Draw(a.canv.GC)
-		} else {
-			a.canv.Refresh()
-		}
-		a.mouse.Draw(a.canv.GC)
+		a.applet.Draw(a.mainImg)
+		a.mouse.Draw(a.mainImg)
 		a.DrawWatch.Stop()
+
 		a.ConvWatch.Start()
-		rgba := a.canv.Img.(*image.RGBA)
-		a.pixBuf.Convert(rgba)
+		a.pixBuf.Convert(a.mainImg)
 		a.ConvWatch.Stop()
+
 		a.SendWatch.Start()
 		a.disp.Send(a.pixBuf)
 		a.SendWatch.Stop()
@@ -117,8 +112,7 @@ func (a *Application) eventThread() {
 		if !a.isRunning {
 			break
 		}
-		a.mouse.Pos = mev.Pos
-		a.prog.OnInputEvent(mev)
+		a.applet.OnInputEvent(mev)
 	}
 	a.mouse.Close()
 }

@@ -1,0 +1,110 @@
+package main
+
+import (
+	"flag"
+	"fmt"
+	"log"
+	"strconv"
+	"strings"
+	"time"
+	//"github.com/stefan-muehlebach/adatft/iliimg"
+	//"github.com/stefan-muehlebach/gg/geom"
+	"periph.io/x/host/v3"
+	"gc9503cv/gc9503cv/geom"
+	"gc9503cv/gc9503cv/iliimg"
+)
+
+//-----------------------------------------------------------------------------
+
+var (
+	disp                   *GC9503CV
+	canv 				   *Canvas
+	dispBounds, drawBounds geom.Rectangle[int]
+	pixBuf                 *iliimg.ILIImage
+	numObjs                int
+)
+
+type GrAppFunc func()
+type GrApp struct {
+	name    string
+	appFunc GrAppFunc
+}
+
+var (
+	appList = []GrApp{
+		{"Big RGB blend", nil},
+		{"RGB test stripes", nil},
+		{"Blend between 4 colors over the whole screen", nil},
+		{"2D constructions", nil},
+		{"Fun with GoColors", nil},
+		{"Fun with TrueType fonts", nil},
+		{"All anchor points of a rectangle", nil},
+		{"Triangle animation", nil},
+		{"Circles animation", nil},
+		{"Platonic solid animation", nil},
+		{"State of the DABGui (rotate this by 90 or 270 degr)", nil},
+		{"Interaction with a mouse", nil},
+	}
+)
+
+func main() {
+	var idxListParam string
+	var idxList []int
+	var doCycle bool
+	var drawingIdx int
+	var timeout time.Duration
+	var rotate RotationType
+	var apps string
+
+	for i, app := range appList {
+		apps += fmt.Sprintf("\n%2d - %s", i, app.name)
+	}
+
+	//flag.StringVar(&cmdStr, "c", "", "Send the hex value as command to the panel")
+	flag.StringVar(&idxListParam, "app", "", "Comma separated list of index(es)."+apps)
+	flag.IntVar(&numObjs, "numObjs", 0, "Number of objects (default depends).")
+	//flag.BoolVar(&doHWReset, "h", true, "Do HW reset during initialization")
+	//flag.BoolVar(&doInit, "i", false, "Do initialization sequence before")
+	flag.Var(&rotate, "rotate", "Rotation of the screen")
+	flag.DurationVar(&timeout, "timeout", 10*time.Second,
+		"Duration (for animations)")
+	flag.Parse()
+
+	idxList = make([]int, 0)
+	doCycle = false
+	idxParams := strings.Split(idxListParam, ",")
+	for i, idxParam := range idxParams {
+		if idxParam == "c" {
+			if i == len(idxParams)-1 {
+				doCycle = true
+			} else {
+				log.Printf("'c' must be the last element of the list")
+			}
+			continue
+		}
+		idx, err := strconv.Atoi(idxParam)
+		if err != nil {
+			log.Printf("ignore '%s' because of error", idxParam)
+			continue
+		}
+		idxList = append(idxList, idx)
+	}
+	if _, err := host.Init(); err != nil {
+		log.Fatalf("host.Init(): %v", err)
+	}
+
+	disp = Open(rotate)
+	dispBounds, drawBounds = disp.Init(true)
+
+	pixBuf = iliimg.NewILIImage(dispBounds.ToInt())
+	pixBuf.SetLSBFirst()
+
+	log.Printf("screen bounds : %v", dispBounds)
+	log.Printf("drawing bounds: %v", drawBounds)
+
+	canv = disp.Canvas()
+
+	if drawingIdx >= 0 {
+		Drawing(disp, canv, idxList, doCycle, timeout)
+	}
+}

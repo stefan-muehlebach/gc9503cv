@@ -1,6 +1,8 @@
 package main
 
 import (
+	"image"
+	"image/draw"
 	"time"
 	"github.com/stefan-muehlebach/gg"
 	"github.com/stefan-muehlebach/gg/colors"
@@ -9,25 +11,29 @@ import (
 
 type GoColorAnim struct {
 	callbackEmbed
-	rect geom.Rectangle[int]
+    gc *gg.Context
+    bounds geom.Rectangle[int]
+	//rect geom.Rectangle[int]
 	t0 time.Time
 	patIdx, prevPatIdx int
 	colorList []string
 }
 
-func NewGoColorAnimation(rect geom.Rectangle[int]) *GoColorAnim {
+func NewGoColorAnimation(bounds geom.Rectangle[int]) *GoColorAnim {
 	a := &GoColorAnim{}
-	a.rect = rect
+    a.bounds = bounds
+    a.gc = gg.NewContext(a.bounds.Dx(), a.bounds.Dy())
+	//a.rect = rect
 	a.patIdx = -1
 	a.prevPatIdx = -1
 	a.colorList = colors.Groups[colors.GoColors]
 	return a
 }
 
-func (a *GoColorAnim) Init(gc *gg.Context) {
-	gc.SetLineWidth(2.0)
-	gc.SetLineCapRound()
-	gc.SetLineJoinRound()
+func (a *GoColorAnim) Init() {
+	a.gc.SetLineWidth(2.0)
+	a.gc.SetLineCapRound()
+	a.gc.SetLineJoinRound()
 	a.t0 = time.Now()
 }
 
@@ -47,22 +53,23 @@ func (a *GoColorAnim) Update(dt time.Duration) {
 	}
 }
 
-func (a *GoColorAnim) Draw(gc *gg.Context) {
+func (a *GoColorAnim) Draw(img *image.RGBA) {
 	if a.patIdx == a.prevPatIdx {
 		return
 	}
 	a.prevPatIdx = a.patIdx
-	gc.SetFillColor(colors.Black)
-	gc.Clear()
+	a.gc.Clear(colors.Black)
 	idx := 0
-	for row := range a.rect.Dy() / 60 {
+	for row := range a.bounds.Dy() / 60 {
 		y := float64(row * 60)
-		for col := range a.rect.Dx() / 60 {
+		for col := range a.bounds.Dx() / 60 {
 			x := float64(col * 60)
-			DrawColorSquare(gc, x, y, a.patIdx, colors.Map[a.colorList[idx]])
+			DrawColorSquare(a.gc, x, y, a.patIdx, colors.Map[a.colorList[idx]])
 			idx = (idx + 1) % len(a.colorList)
 		}
 	}
+    draw.Draw(img, a.bounds.ToInt(), a.gc.Image().(*image.RGBA),
+        image.Point{}, draw.Over)
 }
 
 //-----------------------------------------------------------------------

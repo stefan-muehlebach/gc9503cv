@@ -2,9 +2,9 @@
 package geom
 
 import (
-	"image"
 	"fmt"
-    "math"
+	"image"
+	"math"
 )
 
 //----------------------------------------------------------------------------
@@ -38,7 +38,7 @@ func (p Point[T]) Mul(t T) Point[T] {
 }
 
 func (p Point[T]) Scale(s Point[T]) Point[T] {
-	return Point[T]{p.X*s.X, p.Y*s.Y}
+	return Point[T]{p.X * s.X, p.Y * s.Y}
 }
 
 func (p Point[T]) Div(t T) Point[T] {
@@ -80,11 +80,11 @@ func (p Point[T]) Abs() float64 {
 }
 
 func (p Point[T]) Interpolate(q Point[T], t float64) Point[T] {
-    u := 1.0 - t
+	u := 1.0 - t
 
-    x := float64(p.X)*u + float64(q.X)*t
-    y := float64(p.Y)*u + float64(q.Y)*t
-    return Point[T]{T(x), T(y)}
+	x := float64(p.X)*u + float64(q.X)*t
+	y := float64(p.Y)*u + float64(q.Y)*t
+	return Point[T]{T(x), T(y)}
 }
 
 // Vergleicht die X- sowie die Y-Werte der Punkte p und q und retourniert einen

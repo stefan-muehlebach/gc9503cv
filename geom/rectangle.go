@@ -79,31 +79,31 @@ func (r Rectangle[T]) Size() Point[T] {
 }
 
 func (r Rectangle[T]) NW() Point[T] {
-    return r.Min
+	return r.Min
 }
 func (r Rectangle[T]) N() Point[T] {
-    return Point[T]{(r.Min.X+r.Max.X)/2, r.Min.Y}
+	return Point[T]{(r.Min.X + r.Max.X) / 2, r.Min.Y}
 }
 func (r Rectangle[T]) NE() Point[T] {
-    return Point[T]{r.Max.X, r.Min.Y}
+	return Point[T]{r.Max.X, r.Min.Y}
 }
 func (r Rectangle[T]) W() Point[T] {
-    return Point[T]{r.Min.X, (r.Min.Y+r.Max.Y)/2}
+	return Point[T]{r.Min.X, (r.Min.Y + r.Max.Y) / 2}
 }
 func (r Rectangle[T]) E() Point[T] {
-    return Point[T]{r.Max.X, (r.Min.Y+r.Max.Y)/2}
+	return Point[T]{r.Max.X, (r.Min.Y + r.Max.Y) / 2}
 }
 func (r Rectangle[T]) SW() Point[T] {
-    return Point[T]{r.Min.X, r.Max.Y}
+	return Point[T]{r.Min.X, r.Max.Y}
 }
 func (r Rectangle[T]) S() Point[T] {
-    return Point[T]{(r.Min.X+r.Max.X)/2, r.Max.Y}
+	return Point[T]{(r.Min.X + r.Max.X) / 2, r.Max.Y}
 }
 func (r Rectangle[T]) SE() Point[T] {
-    return r.Max
+	return r.Max
 }
 func (r Rectangle[T]) Center() Point[T] {
-    return Point[T]{(r.Min.X+r.Max.X)/2, (r.Min.Y+r.Max.Y)/2}
+	return Point[T]{(r.Min.X + r.Max.X) / 2, (r.Min.Y + r.Max.Y) / 2}
 }
 func (r Rectangle[T]) RelPos(rx, ry float64) Point[T] {
 	return r.Min.AddXY(T(rx*float64(r.Dx())), T(ry*float64(r.Dy())))
@@ -163,15 +163,14 @@ func (r Rectangle[T]) AsCoord() (x, y, w, h T) {
 	return r.Min.X, r.Min.Y, r.Dx(), r.Dy()
 }
 
-func (r Rectangle[T]) ToFloat() (Rectangle[float64]) {
+func (r Rectangle[T]) ToFloat() Rectangle[float64] {
 	return Rectangle[float64]{r.Min.ToFloat(), r.Max.ToFloat()}
 }
 
-func (r Rectangle[T]) ToInt() (image.Rectangle) {
+func (r Rectangle[T]) ToInt() image.Rectangle {
 	return image.Rectangle{r.Min.ToInt(), r.Max.ToInt()}
 }
 
 func (r Rectangle[T]) AsMinMax() (xMin, yMin, xMax, yMax T) {
 	return r.Min.X, r.Min.Y, r.Max.X, r.Max.Y
 }
-

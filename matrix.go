@@ -7,25 +7,24 @@ import (
 
 //----------------------------------------------------------------------------
 
-
 type ProjMatrix struct {
 	M11, M22, M33, M34, M43 float64
 }
 
 func NewProjMatrix(near, far float64) ProjMatrix {
-	return ProjMatrix{1.0, 1.0, (near+far)/near, -far, 1.0/near}
+	return ProjMatrix{1.0, 1.0, (near + far) / near, -far, 1.0 / near}
 }
 
 func (m ProjMatrix) Project(v Vector) Vector {
-	w := Vector{m.M11*v.X, m.M22*v.Y, m.M33*v.Z - m.M34}
+	w := Vector{m.M11 * v.X, m.M22 * v.Y, m.M33*v.Z - m.M34}
 	f := m.M43 * v.Z
 	return w.Div(f)
 }
 
 var (
-	left, right = -500.0,  500.0
-	top, bottom =  180.0, -180.0
-	near, far   = -10.0,  10.0
+	left, right = -500.0, 500.0
+	top, bottom = 180.0, -180.0
+	near, far   = -10.0, 10.0
 
 	PM = NewProjMatrix(near, far)
 )
@@ -79,7 +78,6 @@ func (v Vector) Cross(w Vector) Vector {
 //----------------------------------------------------------------------------
 
 type Matrix [12]float64
-
 
 func Identity() Matrix {
 	return Matrix{
@@ -228,7 +226,7 @@ func (a Matrix) Inv() Matrix {
 func (a Matrix) String() string {
 	return fmt.Sprintf("[%.4v %.4v %.4v %.4v]\n[%.4v %.4v %.4v %.4v]\n[%.4v %.4v %.4v %.4v]",
 		a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9],
-			a[10], a[11])
+		a[10], a[11])
 }
 
 //----------------------------------------------------------------------------
@@ -243,4 +241,3 @@ func (a Matrix3) String() string {
 	return fmt.Sprintf("[%.4v %.4v %.4v]\n[%.4v %.4v %.4v]",
 		a[0], a[1], a[2], a[3], a[4], a[5])
 }
-

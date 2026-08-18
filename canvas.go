@@ -1,9 +1,9 @@
 package main
 
 import (
-	"log"
 	"container/list"
 	"github.com/stefan-muehlebach/gg"
+	"log"
 )
 
 //----------------------------------------------------------------------------
@@ -14,18 +14,18 @@ const (
 
 //----------------------------------------------------------------------------
 
-type Leaf interface {}
+type Leaf interface{}
 
 type LayoutManager interface {
 	Layout(nodes *list.List, size Point)
-	MinSize(nodes *list.List) (Point)
+	MinSize(nodes *list.List) Point
 }
 
 //----------------------------------------------------------------------------
 
 type Node interface {
 	Wrapper() Node
-    Wrappee() *nodeEmbed
+	Wrappee() *nodeEmbed
 	ToBack()
 	ToFront()
 	Pos() Point
@@ -36,18 +36,18 @@ type Node interface {
 	Hide()
 	Show()
 	IsVisible() bool
-	Contains(pt Point) (Node)
+	Contains(pt Point) Node
 	Draw(gc *gg.Context)
 }
 
 //----------------------------------------------------------------------------
 
 type nodeEmbed struct {
-	wrapper Node
-	parent *containerEmbed
-	pos, minSize, size Point
-	rect Rectangle
-	isHidden bool
+	wrapper                       Node
+	parent                        *containerEmbed
+	pos, minSize, size            Point
+	rect                          Rectangle
+	isHidden                      bool
 	transl, rotate, scale, transf Matrix
 }
 
@@ -55,15 +55,15 @@ func (c *nodeEmbed) Init(n Node) {
 	c.wrapper = n
 	c.transl = Identity()
 	c.rotate = Identity()
-	c.scale  = Identity()
+	c.scale = Identity()
 	c.transf = Identity()
 }
 
-func (c *nodeEmbed) Wrapper() (Node) {
+func (c *nodeEmbed) Wrapper() Node {
 	return c.wrapper
 }
 
-func (c *nodeEmbed) Wrappee() (*nodeEmbed) {
+func (c *nodeEmbed) Wrappee() *nodeEmbed {
 	return c
 }
 
@@ -133,11 +133,11 @@ func (c *nodeEmbed) Show() {
 	c.isHidden = false
 }
 
-func (c *nodeEmbed) IsVisible() (bool) {
+func (c *nodeEmbed) IsVisible() bool {
 	return !c.isHidden
 }
 
-func (c *nodeEmbed) Contains(pt Point) (Node) {
+func (c *nodeEmbed) Contains(pt Point) Node {
 	if pt.In(c.rect) {
 		return c.wrapper
 	} else {
@@ -159,7 +159,7 @@ type Container interface {
 type containerEmbed struct {
 	nodeEmbed
 	childList *list.List
-	Layout LayoutManager
+	Layout    LayoutManager
 }
 
 func (c *containerEmbed) Init(n Node) {
@@ -195,7 +195,7 @@ func (c *containerEmbed) Purge() {
 }
 
 func (c *containerEmbed) layout() {
-    if c.Layout == nil {
+	if c.Layout == nil {
 		return
 	}
 	c.Layout.Layout(c.childList, c.Wrapper().Size())
@@ -208,16 +208,16 @@ func (c *containerEmbed) layout() {
 type Border int
 
 const (
-    Left Border = iota
-    Top
-    Right
-    Bottom
+	Left Border = iota
+	Top
+	Right
+	Bottom
 )
 
 // Mit dem NullLayout werden die verwalteten Nodes per SetPos platziert und
 // werden durch den Container nicht mehr weiter verwaltet. MinSize liefert
 // die maximale Grösse aller verwalteten Nodes.
-type NullLayout struct {}
+type NullLayout struct{}
 
 func (l *NullLayout) Layout(childList *list.List, size Point) {
 
@@ -239,8 +239,9 @@ func (l *NullLayout) MinSize(childList *list.List) Point {
 // mit einem konfigurierbaren Abstand auf die ganze Grösse des Containers
 // expandiert wird.
 type PaddedLayout struct {
-    pad [4]float64
+	pad [4]float64
 }
+
 // Mit den variablen Parametern pads können die Ränder definiert werden.
 // Dabei gilt:
 //   - : verwende das Property 'Padding'
@@ -250,43 +251,42 @@ type PaddedLayout struct {
 //     a,b,c   : verwende a für links, b für oben und unten c für rechts
 //     a,b,c,d : (dito) und d für den unteren Rand.
 func NewPaddedLayout(pads ...float64) *PaddedLayout {
-    var l, t, r, b float64
-    switch len(pads) {
-    case 0:
-        l, t, r, b = 10, 10, 10, 10
-    case 1:
-        l, t, r, b = pads[0], pads[0], pads[0], pads[0]
-    case 2:
-        l, t, r, b = pads[0], pads[1], pads[0], pads[1]
-    case 3:
-        l, t, r, b = pads[0], pads[1], pads[2], pads[1]
-    case 4:
-        l, t, r, b = pads[0], pads[1], pads[2], pads[3]
-    }
-    return &PaddedLayout{[4]float64{l, t, r, b}}
+	var l, t, r, b float64
+	switch len(pads) {
+	case 0:
+		l, t, r, b = 10, 10, 10, 10
+	case 1:
+		l, t, r, b = pads[0], pads[0], pads[0], pads[0]
+	case 2:
+		l, t, r, b = pads[0], pads[1], pads[0], pads[1]
+	case 3:
+		l, t, r, b = pads[0], pads[1], pads[2], pads[1]
+	case 4:
+		l, t, r, b = pads[0], pads[1], pads[2], pads[3]
+	}
+	return &PaddedLayout{[4]float64{l, t, r, b}}
 }
 
 func (l *PaddedLayout) Layout(childList *list.List, size Point) {
-    pos := Point{l.pad[Left], l.pad[Top]}
-    siz := Point{size.X - l.pad[Left] - l.pad[Right],
-        size.Y - l.pad[Top] - l.pad[Bottom]}
-    for elem := childList.Front(); elem != nil; elem = elem.Next() {
-        child := elem.Value.(*nodeEmbed).Wrapper()
-        child.SetSize(siz)
-        child.SetPos(pos)
-    }
+	pos := Point{l.pad[Left], l.pad[Top]}
+	siz := Point{size.X - l.pad[Left] - l.pad[Right],
+		size.Y - l.pad[Top] - l.pad[Bottom]}
+	for elem := childList.Front(); elem != nil; elem = elem.Next() {
+		child := elem.Value.(*nodeEmbed).Wrapper()
+		child.SetSize(siz)
+		child.SetPos(pos)
+	}
 }
 
 func (l *PaddedLayout) MinSize(childList *list.List) Point {
-    minSize := Point{}
-    for elem := childList.Front(); elem != nil; elem = elem.Next() {
-        child := elem.Value.(*nodeEmbed).Wrapper()
-        if !child.IsVisible() {
-            continue
-        }
-        minSize = minSize.Max(child.MinSize())
-    }
-    return minSize.Add(Point{l.pad[Left] + l.pad[Right],
-        l.pad[Top] + l.pad[Bottom]})
+	minSize := Point{}
+	for elem := childList.Front(); elem != nil; elem = elem.Next() {
+		child := elem.Value.(*nodeEmbed).Wrapper()
+		if !child.IsVisible() {
+			continue
+		}
+		minSize = minSize.Max(child.MinSize())
+	}
+	return minSize.Add(Point{l.pad[Left] + l.pad[Right],
+		l.pad[Top] + l.pad[Bottom]})
 }
-

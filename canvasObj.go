@@ -1,13 +1,15 @@
 //go:build ignore
 
+package main
+
 //----------------------------------------------------------------------------
 
 type Canvas struct {
-	Objs *list.List
-	Anims *list.List
-	Rect image.Rectangle
-	GC *gg.Context
-	Img draw.Image
+	Objs      *list.List
+	Anims     *list.List
+	Rect      image.Rectangle
+	GC        *gg.Context
+	Img       draw.Image
 	BackColor colors.RGBA
 }
 
@@ -25,7 +27,7 @@ func newCanvas(size geom.Point[int]) *Canvas {
 }
 
 func (c *Canvas) Add(objs ...Node) {
-    for _, obj := range objs {
+	for _, obj := range objs {
 		c.Objs.PushBack(obj)
 	}
 }
@@ -77,4 +79,3 @@ func (c *Canvas) Refresh() {
 		obj.Draw(c.GC)
 	}
 }
-

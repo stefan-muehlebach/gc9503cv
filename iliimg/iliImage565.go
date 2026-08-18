@@ -3,6 +3,7 @@
 package iliimg
 
 import (
+	"gc9503cv/gc9503cv/geom"
 	"image"
 	"image/color"
 )
@@ -124,11 +125,9 @@ Loop4:
 // Konvertiert die Bilddaten des Bildes hinter src (RGBA-Image) in ein
 // ILI-spezifisches Bild. Dabei kann mit Rect (d.h. Bounds()) bestimmt werden
 // welcher Bereich konvertiert werden soll.
-func (p *ILIImage) Convert(src *image.RGBA) {
+func (p *ILIImage) ConvertOrig(src *image.RGBA) {
 	var row, col int
 	var srcBaseIdx, srcIdx, dstBaseIdx, dstIdx int
-
-	//ConvWatch.Start()
 
 	srcBaseIdx = 0
 	dstBaseIdx = src.Rect.Min.Y*p.Stride + src.Rect.Min.X*bytesPerPixel
@@ -155,5 +154,93 @@ func (p *ILIImage) Convert(src *image.RGBA) {
 		srcBaseIdx += src.Stride
 		dstBaseIdx += p.Stride
 	}
-	//ConvWatch.Stop()
+}
+
+// Konvertiert die Bilddaten des Bildes hinter src (RGBA-Image) in ein
+// ILI-spezifisches Bild. Dabei kann mit Rect (d.h. Bounds()) bestimmt werden
+// welcher Bereich konvertiert werden soll.
+func (p *ILIImage) ConvertSimple(src *image.RGBA) {
+	var row, col int
+	var srcBaseIdx, srcIdx, srcInnerIdxStep, srcOuterIdxStep int
+	var dstBaseIdx, dstIdx, dstInnerIdxStep, dstOuterIdxStep int
+
+	srcInnerIdxStep, srcOuterIdxStep = 4, src.Stride
+	dstInnerIdxStep, dstOuterIdxStep = bytesPerPixel, p.Stride
+
+	srcBaseIdx = 0
+	dstBaseIdx = src.Rect.Min.Y*p.Stride + src.Rect.Min.X*bytesPerPixel
+	for row = src.Rect.Min.Y; row < src.Rect.Max.Y; row++ {
+		srcIdx = srcBaseIdx
+		dstIdx = dstBaseIdx
+
+		for col = src.Rect.Min.X; col < src.Rect.Max.X; col++ {
+			s := src.Pix[srcIdx : srcIdx+3 : srcIdx+3]
+			d := p.Pix[dstIdx : dstIdx+bytesPerPixel : dstIdx+bytesPerPixel]
+			r := s[0] & 0xF8
+			g := s[1] & 0xFC
+			b := s[2] & 0xF8
+			if p.lsbFirst {
+				d[1] = (r) | (g >> 5)
+				d[0] = (g << 3) | (b >> 3)
+			} else {
+				d[0] = (r) | (g >> 5)
+				d[1] = (g << 3) | (b >> 3)
+			}
+			srcIdx += srcInnerIdxStep
+			dstIdx += dstInnerIdxStep
+		}
+		srcBaseIdx += srcOuterIdxStep
+		dstBaseIdx += dstOuterIdxStep
+	}
+}
+
+// Konvertiert die Bilddaten des Bildes hinter src (RGBA-Image) in ein
+// ILI-spezifisches Bild. Dabei kann mit Rect (d.h. Bounds()) bestimmt werden
+// welcher Bereich konvertiert werden soll.
+func (p *ILIImage) Convert(src *image.RGBA, rot geom.RotationType) {
+	var row, col int
+	var srcBaseIdx, srcIdx, srcInnerIdxStep, srcOuterIdxStep int
+	var dstBaseIdx, dstIdx, dstInnerIdxStep, dstOuterIdxStep int
+
+	srcInnerIdxStep, srcOuterIdxStep = 4, src.Stride
+	srcBaseIdx = 0
+
+	switch rot {
+	case geom.Rot000:
+		dstInnerIdxStep, dstOuterIdxStep = bytesPerPixel, p.Stride
+		dstBaseIdx = src.Rect.Min.Y*p.Stride + src.Rect.Min.X*bytesPerPixel
+	case geom.Rot090:
+		dstInnerIdxStep, dstOuterIdxStep = -p.Stride, bytesPerPixel
+		dstBaseIdx = (960-1-src.Rect.Min.X)*p.Stride + src.Rect.Min.Y*bytesPerPixel
+	case geom.Rot180:
+		dstInnerIdxStep, dstOuterIdxStep = -bytesPerPixel, -p.Stride
+		dstBaseIdx = (960-1-src.Rect.Min.Y)*p.Stride + (480-1-src.Rect.Min.X)*bytesPerPixel
+	case geom.Rot270:
+		dstInnerIdxStep, dstOuterIdxStep = p.Stride, -bytesPerPixel
+		dstBaseIdx = src.Rect.Min.X*p.Stride + (480-1-src.Rect.Min.Y)*bytesPerPixel
+	}
+
+	for row = src.Rect.Min.Y; row < src.Rect.Max.Y; row++ {
+		srcIdx = srcBaseIdx
+		dstIdx = dstBaseIdx
+
+		for col = src.Rect.Min.X; col < src.Rect.Max.X; col++ {
+			s := src.Pix[srcIdx : srcIdx+3 : srcIdx+3]
+			d := p.Pix[dstIdx : dstIdx+bytesPerPixel : dstIdx+bytesPerPixel]
+			r := s[0] & 0xF8
+			g := s[1] & 0xFC
+			b := s[2] & 0xF8
+			if p.lsbFirst {
+				d[1] = (r) | (g >> 5)
+				d[0] = (g << 3) | (b >> 3)
+			} else {
+				d[0] = (r) | (g >> 5)
+				d[1] = (g << 3) | (b >> 3)
+			}
+			srcIdx += srcInnerIdxStep
+			dstIdx += dstInnerIdxStep
+		}
+		srcBaseIdx += srcOuterIdxStep
+		dstBaseIdx += dstOuterIdxStep
+	}
 }

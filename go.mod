@@ -1,6 +1,6 @@
 module gc9503cv/gc9503cv
 
-go 1.26.5
+go 1.26.6
 
 require (
 	periph.io/x/conn/v3 v3.7.3

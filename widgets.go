@@ -1,10 +1,10 @@
 package main
 
 import (
-    "github.com/stefan-muehlebach/gg"
-    "github.com/stefan-muehlebach/gg/colors"
-    "github.com/stefan-muehlebach/gg/fonts"
-    //"github.com/stefan-muehlebach/gg/geom"
+	"github.com/stefan-muehlebach/gg"
+	"github.com/stefan-muehlebach/gg/colors"
+	"github.com/stefan-muehlebach/gg/fonts"
+	//"github.com/stefan-muehlebach/gg/geom"
 )
 
 //----------------------------------------------------------------------------
@@ -16,8 +16,8 @@ var (
 type Button struct {
 	nodeEmbed
 	BorderColor, FillColor, TextColor colors.RGBA
-	BorderWidth, CornerRadius float64
-	Text string
+	BorderWidth, CornerRadius         float64
+	Text                              string
 }
 
 func NewButton() *Button {
@@ -35,12 +35,12 @@ func NewButton() *Button {
 
 func (b *Button) Draw(gc *gg.Context) {
 	iRect := b.rect.Inset(b.BorderWidth/2.0, b.BorderWidth/2.0)
-    gc.SetLineWidth(b.BorderWidth)
-    gc.SetLineColor(b.BorderColor)
-    gc.SetFillColor(b.FillColor)
-    gc.DrawRoundedRectangle(iRect.Min.X, iRect.Min.Y, iRect.Dx(), iRect.Dy(),
+	gc.SetLineWidth(b.BorderWidth)
+	gc.SetLineColor(b.BorderColor)
+	gc.SetFillColor(b.FillColor)
+	gc.DrawRoundedRectangle(iRect.Min.X, iRect.Min.Y, iRect.Dx(), iRect.Dy(),
 		b.CornerRadius)
-    gc.FillStroke()
+	gc.FillStroke()
 
 	if b.Text != "" {
 		mp := iRect.Center()
@@ -49,11 +49,10 @@ func (b *Button) Draw(gc *gg.Context) {
 		gc.DrawStringAnchored(b.Text, mp.X, mp.Y, 0.5, 0.5)
 	}
 
-    if guiDebugging {
-        gc.SetLineWidth(2.0)
-        gc.SetLineColor(colors.GoFuchsia)
-        gc.DrawRectangle(b.pos.X, b.pos.Y, b.size.X, b.size.Y)
-        gc.Stroke()
-    }
+	if guiDebugging {
+		gc.SetLineWidth(2.0)
+		gc.SetLineColor(colors.GoFuchsia)
+		gc.DrawRectangle(b.pos.X, b.pos.Y, b.size.X, b.size.Y)
+		gc.Stroke()
+	}
 }
-

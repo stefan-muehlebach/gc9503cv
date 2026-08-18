@@ -5,14 +5,14 @@ package main
 import (
 	//"flag"
 	//"fmt"
+	xdraw "golang.org/x/image/draw"
 	"image"
-	"image/draw"
 	"image/color"
+	"image/draw"
 	"log"
 	"math"
 	"math/rand"
 	"time"
-	xdraw "golang.org/x/image/draw"
 	//"image/draw"
 	//"github.com/stefan-muehlebach/adagui"
 	//"github.com/stefan-muehlebach/adatft/gc9503cv"
@@ -32,7 +32,7 @@ var (
 	SendWatch = NewStopwatch()
 
 	// pointerEventFile = "/dev/input/event0"
-	paletteFile      = "paletten.json"
+	paletteFile = "paletten.json"
 
 	cursorList = []*Cursor{
 		OpenCursor("cross"),
@@ -75,7 +75,7 @@ func Update(disp *GC9503CV, canv *Canvas, pixBuf *iliimg.ILIImage) {
 }
 
 func Drawing(disp *GC9503CV, canv *Canvas, idxList []int, doCycle bool,
-		timeout time.Duration) {
+	timeout time.Duration) {
 
 	//draw.Draw(screen, screen.Bounds(), image.NewUniform(colors.Black),
 	//	image.Point{}, draw.Src)
@@ -276,7 +276,7 @@ func Drawing(disp *GC9503CV, canv *Canvas, idxList []int, doCycle bool,
 				gc.Clear()
 				gc.SetLineColor(colors.RandColor())
 				mp = r.Center()
-				rad := (r.Dx()/2.0) - 2.0
+				rad := (r.Dx() / 2.0) - 2.0
 				for mp.Y < r.Dy()-rad {
 					gc.DrawCircle(mp.X, mp.Y, rad)
 					gc.Stroke()
@@ -419,12 +419,12 @@ func Drawing(disp *GC9503CV, canv *Canvas, idxList []int, doCycle bool,
 			DABGui(disp, canv, drawRect.ToFloat())
 
 		case 11:
-			margin      := 10.0
-			padding     := 10.0
+			margin := 10.0
+			padding := 10.0
 			panelBounds := drawRect.ToFloat().Inset(margin, margin)
-			buttonSize  := Point{
-				(panelBounds.Dx()-padding)/2.0,
-				(panelBounds.Dy()-4*padding)/5.0,
+			buttonSize := Point{
+				(panelBounds.Dx() - padding) / 2.0,
+				(panelBounds.Dy() - 4*padding) / 5.0,
 			}
 
 			p0 := panelBounds.Min
@@ -446,31 +446,31 @@ func Drawing(disp *GC9503CV, canv *Canvas, idxList []int, doCycle bool,
 
 		case 12:
 			imgTwoWord, _ := gg.LoadPNG("images/14_TwoWord.png")
-			imgReef, _    := gg.LoadPNG("images/02_Reef.png")
+			imgReef, _ := gg.LoadPNG("images/02_Reef.png")
 			imgA, imgB := imgTwoWord, imgReef
 
 			log.Printf("gg.DrawImage()")
 			DrawWatch.Start()
-		    canv.Clear(canv.BackColor)
+			canv.Clear(canv.BackColor)
 			gc.DrawImage(imgA, 0, 0)
 			Update(disp, canv, pixBuf)
 			DrawWatch.Stop()
 			PrintWatchStats()
 			imgA, imgB = imgB, imgA
-			
+
 			log.Printf("draw.Draw()")
 			DrawWatch.Start()
-		    canv.Clear(canv.BackColor)
+			canv.Clear(canv.BackColor)
 			draw.Draw(canv.Img, drawBounds.ToInt(), imgA,
 				image.Point{}, draw.Src)
 			Update(disp, canv, pixBuf)
 			DrawWatch.Stop()
 			PrintWatchStats()
 			imgA, imgB = imgB, imgA
-			
+
 			log.Printf("xdraw.Copy()")
 			DrawWatch.Start()
-		    canv.Clear(canv.BackColor)
+			canv.Clear(canv.BackColor)
 			xdraw.Copy(canv.Img, drawBounds.Min.ToInt(), imgA,
 				imgTwoWord.Bounds(), draw.Src, nil)
 			Update(disp, canv, pixBuf)
@@ -478,65 +478,65 @@ func Drawing(disp *GC9503CV, canv *Canvas, idxList []int, doCycle bool,
 			PrintWatchStats()
 
 		case 13:
-			imgTwoWord, _    := gg.LoadPNG("images/14_TwoWord.png")
+			imgTwoWord, _ := gg.LoadPNG("images/14_TwoWord.png")
 			imgBackground, _ := gg.LoadPNG("images/10_Background.png")
 			fg, bg := imgTwoWord, imgBackground
 
-        	p0 := image.Point{8, 0}
-        	sz := image.Rect(0, 0, 80, 80)
-        	dx := image.Point{sz.Dx()+8, 0}
-        	dy := image.Point{0, sz.Dy()+8}
-        	orig := drawBounds.Min.ToInt()
-        
-        	originList := make([]image.Point, 44)
-        	for i := range 44 {
-        		col := i % 4
-        		row := i / 4
-        		originList[i] = p0.Add(dx.Mul(col)).Add(dy.Mul(row))
-        	}
-        
-        	//dev.SetDoubleBuffer(true)
-        	draw.Draw(canv.Img, drawBounds.ToInt(), bg, image.Point{}, draw.Src)
-        	for _, pt := range originList {
-        		draw.Draw(canv.Img, sz.Add(pt).Add(orig), fg, pt, draw.Src)
-        	}
-        	//dev.SwitchBuffer()
+			p0 := image.Point{8, 0}
+			sz := image.Rect(0, 0, 80, 80)
+			dx := image.Point{sz.Dx() + 8, 0}
+			dy := image.Point{0, sz.Dy() + 8}
+			orig := drawBounds.Min.ToInt()
+
+			originList := make([]image.Point, 44)
+			for i := range 44 {
+				col := i % 4
+				row := i / 4
+				originList[i] = p0.Add(dx.Mul(col)).Add(dy.Mul(row))
+			}
+
+			//dev.SetDoubleBuffer(true)
+			draw.Draw(canv.Img, drawBounds.ToInt(), bg, image.Point{}, draw.Src)
+			for _, pt := range originList {
+				draw.Draw(canv.Img, sz.Add(pt).Add(orig), fg, pt, draw.Src)
+			}
+			//dev.SwitchBuffer()
 			Update(disp, canv, pixBuf)
-        	time.Sleep(1 * time.Second)
-        
-        	draw.Draw(canv.Img, drawBounds.ToInt(), bg, image.Point{}, draw.Src)
-        	idxList := make([]int, len(originList))
-        	for i := range idxList {
-        		idxList[i] = i
-        	}
-        	maxMs := 1000
-        	nSteps := 40
-        	for i := range nSteps {
-        		t := float64(i) / float64(nSteps-1)
-        		t = (t * t * t) * float64(maxMs)
-        		d := time.Duration(t) * time.Millisecond
-        
+			time.Sleep(1 * time.Second)
+
+			draw.Draw(canv.Img, drawBounds.ToInt(), bg, image.Point{}, draw.Src)
+			idxList := make([]int, len(originList))
+			for i := range idxList {
+				idxList[i] = i
+			}
+			maxMs := 1000
+			nSteps := 40
+			for i := range nSteps {
+				t := float64(i) / float64(nSteps-1)
+				t = (t * t * t) * float64(maxMs)
+				d := time.Duration(t) * time.Millisecond
+
 				DrawWatch.Start()
-        	    draw.Draw(canv.Img, drawBounds.ToInt(), bg, image.Point{},
+				draw.Draw(canv.Img, drawBounds.ToInt(), bg, image.Point{},
 					draw.Src)
-        		rand.Shuffle(len(idxList), func(i, j int) {
-        			idxList[i], idxList[j] = idxList[j], idxList[i]
-        		})
-        		for i := range idxList {
-        			srcPt := originList[i]
-        			dstPt := originList[idxList[i]]
-        
-        			draw.Draw(canv.Img, sz.Add(dstPt).Add(orig), fg,
+				rand.Shuffle(len(idxList), func(i, j int) {
+					idxList[i], idxList[j] = idxList[j], idxList[i]
+				})
+				for i := range idxList {
+					srcPt := originList[i]
+					dstPt := originList[idxList[i]]
+
+					draw.Draw(canv.Img, sz.Add(dstPt).Add(orig), fg,
 						srcPt, draw.Src)
-        		}
+				}
 				DrawWatch.Stop()
-        		//dev.SwitchBuffer()
+				//dev.SwitchBuffer()
 				Update(disp, canv, pixBuf)
-        		time.Sleep(d)
-        		d += 20 * time.Millisecond
-        	}
-        	time.Sleep(3 * time.Second)
-        	//dev.SetDoubleBuffer(false)
+				time.Sleep(d)
+				d += 20 * time.Millisecond
+			}
+			time.Sleep(3 * time.Second)
+			//dev.SetDoubleBuffer(false)
 		default:
 			log.Printf("No app found!")
 		}
@@ -556,7 +556,7 @@ func Drawing(disp *GC9503CV, canv *Canvas, idxList []int, doCycle bool,
 					case *Button:
 						obj.FillColor = colors.Gold
 					}
-					
+
 					switch mev.Type {
 					case TypeRelease:
 						cursorIdx = (cursorIdx + 1) % len(cursorList)

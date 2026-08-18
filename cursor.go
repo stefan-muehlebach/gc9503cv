@@ -2,13 +2,13 @@ package main
 
 import (
 	"embed"
+	"gc9503cv/gc9503cv/geom"
 	"image"
 	"io/fs"
 	"log"
 	"path"
 	"regexp"
 	"strconv"
-	"gc9503cv/gc9503cv/geom"
 )
 
 const (
@@ -16,24 +16,24 @@ const (
 )
 
 var (
-	CrossCursor = OpenCursor("cross")
-	CrosshairCursor = OpenCursor("crosshair")
-	GrabCursor = OpenCursor("grab")
-	GrabbingCursor = OpenCursor("grabbing")
-	IbeamCursor = OpenCursor("ibeam")
-	LeftPtrCursor = OpenCursor("left_ptr")
+	CrossCursor        = OpenCursor("cross")
+	CrosshairCursor    = OpenCursor("crosshair")
+	GrabCursor         = OpenCursor("grab")
+	GrabbingCursor     = OpenCursor("grabbing")
+	IbeamCursor        = OpenCursor("ibeam")
+	LeftPtrCursor      = OpenCursor("left_ptr")
 	PointingHandCursor = OpenCursor("pointing_hand")
-	RightPtrCursor = OpenCursor("right_ptr")
+	RightPtrCursor     = OpenCursor("right_ptr")
 
 	CursorList = []*Cursor{
-    	CrossCursor,
-    	CrosshairCursor,
-    	GrabCursor,
-    	GrabbingCursor,
-    	IbeamCursor,
-    	LeftPtrCursor,
-    	PointingHandCursor,
-    	RightPtrCursor,
+		CrossCursor,
+		CrosshairCursor,
+		GrabCursor,
+		GrabbingCursor,
+		IbeamCursor,
+		LeftPtrCursor,
+		PointingHandCursor,
+		RightPtrCursor,
 	}
 )
 
@@ -74,4 +74,3 @@ func OpenCursor(cursorName string) *Cursor {
 	}
 	return c
 }
-

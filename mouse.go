@@ -6,8 +6,8 @@ import (
 	"log"
 	"time"
 	//"fmt"
-	"github.com/holoplot/go-evdev"
 	"gc9503cv/gc9503cv/geom"
+	"github.com/holoplot/go-evdev"
 )
 
 // Mit diesem Datentyp werden die unterschiedlichen Event-Arten abgebildet,
@@ -37,6 +37,8 @@ const (
 	// das TypeLongPress-Event (siehe auch die Konstanten LongPressThreshold
 	// und NearThreshold).
 	TypeLongPress
+	// Wurde das Mausrad gedreht
+	TypeWheel
 	// Verlaesst oder Betritt der Druckpunkt beim Wandern ein Objekt, dann
 	// werden die Events TypeLeave, resp. TypeEnter gesendet.
 	TypeEnter
@@ -87,6 +89,8 @@ func (t MouseEventType) String() string {
 		return "Drag"
 	case TypeLongPress:
 		return "LongPress"
+	case TypeWheel:
+		return "Wheel"
 	case TypeEnter:
 		return "Enter"
 	case TypeLeave:
@@ -112,14 +116,14 @@ type MouseEventChannelType chan MouseEvent
 // Dieser Typ steht fuer das SPI Interface zum STMPE - dem Touchscreen.
 type Mouse struct {
 	Pos                          geom.Point[int]
-	posRange                     geom.Rectangle[int]
 	Wheel                        int
 	LeftBtn, MiddleBtn, RightBtn int32
 	EventQ                       MouseEventChannelType
 	dev                          *evdev.InputDevice
-	isOpen                       bool
+	posRange             geom.Rectangle[int]
 	minWheel, maxWheel           int
-	cursor *Cursor
+	cursor                       *Cursor
+	isOpen                       bool
 }
 
 var (
@@ -153,11 +157,20 @@ func (m *Mouse) SetCursor(cursor *Cursor) (old *Cursor) {
 	return
 }
 
+func (m *Mouse) Bounds() image.Rectangle {
+	orig := m.Pos.Sub(m.cursor.hotspot).ToInt()
+	return m.cursor.img.Bounds().Add(orig)
+}
+
+func (m *Mouse) Image() image.Image {
+	return m.cursor.img
+}
+
 func (m *Mouse) Draw(img *image.RGBA) {
 	if m.cursor == nil {
 		return
 	}
-    orig := m.Pos.Sub(m.cursor.hotspot).ToInt()
+	orig := m.Pos.Sub(m.cursor.hotspot).ToInt()
 	dstRect := m.cursor.img.Bounds().Add(orig).Add(img.Rect.Min)
 	draw.Draw(img, dstRect, m.cursor.img, image.Point{}, draw.Over)
 }
@@ -249,20 +262,30 @@ func (m *Mouse) processEvents() {
 		switch e.Type {
 		case evdev.EV_REL:
 			switch e.Code {
-			case evdev.REL_X:
-				m.Pos.X += int(e.Value)
-				if m.Pos.X < m.posRange.Min.X {
-					m.Pos.X = m.posRange.Min.X
-				} else if m.Pos.X >= m.posRange.Max.X {
-					m.Pos.X = m.posRange.Max.X - 1
+			case evdev.REL_X, evdev.REL_Y:
+				if e.Code == evdev.REL_X {
+					m.Pos.X += int(e.Value)
+					if m.Pos.X < m.posRange.Min.X {
+						m.Pos.X = m.posRange.Min.X
+					} else if m.Pos.X >= m.posRange.Max.X {
+						m.Pos.X = m.posRange.Max.X - 1
+					}
+				} else {
+					m.Pos.Y += int(e.Value)
+					if m.Pos.Y < m.posRange.Min.Y {
+						m.Pos.Y = m.posRange.Min.Y
+					} else if m.Pos.Y >= m.posRange.Max.Y {
+						m.Pos.Y = m.posRange.Max.Y - 1
+					}
 				}
-			case evdev.REL_Y:
-				m.Pos.Y += int(e.Value)
-				if m.Pos.Y < m.posRange.Min.Y {
-					m.Pos.Y = m.posRange.Min.Y
-				} else if m.Pos.Y >= m.posRange.Max.Y {
-					m.Pos.Y = m.posRange.Max.Y - 1
+				if mev.Button > 0 {
+					mev.Type = TypeDrag
+				} else {
+					mev.Type = TypeMove
 				}
+				mev.Pos = m.Pos
+				mev.Time = time.Now()
+				m.enqueueEvent(mev)
 			case evdev.REL_WHEEL:
 				m.Wheel += int(e.Value)
 				if m.Wheel < m.minWheel {
@@ -270,18 +293,13 @@ func (m *Mouse) processEvents() {
 				} else if m.Wheel >= m.maxWheel {
 					m.Wheel = m.maxWheel - 1
 				}
+				mev.Type = TypeWheel
+				mev.Wheel = m.Wheel
+				mev.Time = time.Now()
+				m.enqueueEvent(mev)
 			default:
 				continue
 			}
-			if mev.Button > 0 {
-				mev.Type = TypeDrag
-			} else {
-				mev.Type = TypeMove
-			}
-			mev.Time = time.Now()
-			mev.Pos = m.Pos
-			mev.Wheel = m.Wheel
-			m.enqueueEvent(mev)
 
 		case evdev.EV_KEY:
 			if e.Value == 1 {
@@ -304,11 +322,11 @@ func (m *Mouse) processEvents() {
 					mevCopy := mev
 					time.Sleep(LongPressThreshold)
 					if (mev.Type == TypePress || mev.Type == TypeDrag) &&
-							mev.Button == mevCopy.Button &&
-							mev.InitPos.Distance(mev.Pos) < NearThreshold {
+						mev.Button == mevCopy.Button &&
+						mev.InitPos.Distance(mev.Pos) < NearThreshold {
 						mev.LongPressed = true
 						mevCopy = mev
-						mevCopy.Type = TypeLongPress
+						//mevCopy.Type = TypeLongPress
 						mevCopy.Time = time.Now()
 						m.enqueueEvent(mevCopy)
 					}
@@ -322,11 +340,14 @@ func (m *Mouse) processEvents() {
 				m.enqueueEvent(mev)
 
 				if mev.InitPos.Distance(mev.Pos) < NearThreshold &&
-						mev.Time.Sub(mev.InitTime) < ClickDuration {
+					mev.Time.Sub(mev.InitTime) < ClickDuration {
 					//log.Printf("Click will be generated")
 					mev.Type = TypeClick
 					m.enqueueEvent(mev)
 				}
+				mev.InitPos = geom.Point[int]{}
+				mev.InitTime = time.Time{}
+				mev.LongPressed = false
 				mev.Button = 0x00
 			}
 		default:
@@ -365,20 +386,13 @@ type Event struct {
 // Jedes Ereignis des Touchscreens wird durch eine Variable des Typs
 // 'Event' repraesentiert.
 type MouseEvent struct {
-	Type                         MouseEventType
-	Time, InitTime               time.Time
-	Pos, InitPos                 geom.Point[int]
-	Button						 MouseButtonType
-	LongPressed bool
-	Wheel                        int
-	//LeftBtn, MiddleBtn, RightBtn int32
+	Type           MouseEventType
+	Time, InitTime time.Time
+	Pos, InitPos   geom.Point[int]
+	Button         MouseButtonType
+	LongPressed    bool
+	Wheel          int
 }
-
-// Fuer das Debugging implementiert Event das Stringer-Interface.
-//func (evt MouseEvent) String() string {
-//	return fmt.Sprintf("%v %s %v", evt.Type,
-//		evt.Time.Format("15:04:05.000000"), evt.Pos)
-//}
 
 // Alle Callback-Handler fuer die Ereignisse vom Touchscreen, muessen folgendes
 // Profil aufweisen.
@@ -435,6 +449,11 @@ func (m *callbackEmbed) SetOnDrag(fnc CallbackType) {
 // Registriert fnc als Handler fuer den LongPress-Event.
 func (m *callbackEmbed) SetOnLongPress(fnc CallbackType) {
 	m.SetCallback(fnc, TypeLongPress)
+}
+
+// Registriert fnc als Handler fuer den Wheel-Event.
+func (m *callbackEmbed) SetOnWheel(fnc CallbackType) {
+	m.SetCallback(fnc, TypeWheel)
 }
 
 // Registriert fnc als Handler fuer den Enter-Event.

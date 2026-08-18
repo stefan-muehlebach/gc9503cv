@@ -2,18 +2,19 @@ package main
 
 import (
 	"flag"
+	"gc9503cv/gc9503cv/geom"
 	"log"
 	"time"
+
 	"github.com/stefan-muehlebach/gg/colors"
 	"periph.io/x/host/v3"
-	"gc9503cv/gc9503cv/geom"
 )
 
 //-----------------------------------------------------------------------------
 
 var (
-	disp                   *GC9503CV
-	app *Application
+	disp                             *GC9503CV
+	app                              *Application
 	dispBounds, drawBounds, drawRect geom.Rectangle[int]
 
 	colorList = []colors.RGBA{
@@ -29,9 +30,10 @@ var (
 func main() {
 	var progIdx int
 	var timeout time.Duration
-	var rotate RotationType
+	var rotate geom.RotationType
 	var numObjs int
 	var applet Applet
+	var pointList []Point
 
 	flag.IntVar(&numObjs, "numObjs", 0, "Number of objects.")
 	flag.IntVar(&progIdx, "prog", 0, "Index of program to play.")
@@ -45,14 +47,41 @@ func main() {
 	}
 
 	disp = Open(rotate)
-	dispBounds, drawBounds = disp.Init(true)
+	disp.Init(true)
+	dispBounds = disp.DispBounds()
+	drawBounds = disp.DrawBounds()
 	drawRect = disp.DrawRect()
+	m := disp.Matrix()
+
+	log.Printf("display bounds: %v", dispBounds)
+	log.Printf("drawing bounds: %v", drawBounds)
+	log.Printf("drawing rect  : %v", drawRect)
 
 	app = NewApplication(disp)
+	log.Printf("app.mainImg: %v", app.mainImg.Bounds())
+	log.Printf("app.pixBuf : %v", app.pixBuf.Bounds())
 
-	//log.Printf("screen bounds : %v", dispBounds)
-	//log.Printf("drawing bounds: %v", drawBounds)
-	
+	switch rotate {
+	case geom.Rot000, geom.Rot180:
+		pointList = []Point{
+			{0, 0},
+			{360, 0},
+			{0, 960},
+			{360, 960},
+		}
+	case geom.Rot090, geom.Rot270:
+		pointList = []Point{
+			{0, 0},
+			{960, 0},
+			{0, 360},
+			{960, 360},
+		}
+	}
+	for _, pt := range pointList {
+		ptNew := m.Transform(pt)
+		log.Printf("%v -> %v", pt, ptNew)
+	}
+
 	switch progIdx {
 	case 0:
 		applet = NewStripeAnimation(drawBounds, colorList)
@@ -64,6 +93,10 @@ func main() {
 		applet = NewPlatonicAnimation(drawBounds, numObjs)
 	case 4:
 		applet = NewGoColorAnimation(drawBounds)
+	case 5:
+		applet = NewFontsAnimation(drawBounds)
+	default:
+		log.Fatalf("No Applet with index %d found", progIdx)
 	}
 	app.SetApplet(applet)
 
@@ -72,4 +105,3 @@ func main() {
 
 	app.PrintWatchStats()
 }
-

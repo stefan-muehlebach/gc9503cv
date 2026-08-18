@@ -1,16 +1,19 @@
 package main
 
 import (
+	"image"
 	"log"
 	"math"
-	"image"
 	"time"
+
 	"periph.io/x/conn/v3/gpio"
 	"periph.io/x/conn/v3/gpio/gpioreg"
+
 	//"github.com/stefan-muehlebach/adatft/iliimg"
-	"github.com/stefan-muehlebach/framebuffer"
 	"gc9503cv/gc9503cv/geom"
 	"gc9503cv/gc9503cv/iliimg"
+
+	"github.com/stefan-muehlebach/framebuffer"
 )
 
 const (
@@ -27,7 +30,7 @@ const (
 )
 
 type (
-	Point = geom.Point[float64]
+	Point     = geom.Point[float64]
 	Rectangle = geom.Rectangle[float64]
 )
 
@@ -40,13 +43,13 @@ type GC9503CV struct {
 	mosi, sck, cs, rst     gpio.PinIO
 	fb                     *framebuffer.Device
 	dispBounds, drawBounds geom.Rectangle[int]
-	rot                    RotationType
+	rot                    geom.RotationType
 }
 
 // Geoeffnet wird die Verbindung zum neuen Monitor (zusammen mit weiteren
 // Objekten) durch die Funktion Open(). Mit rot wird die gewuenschte
 // Rotation des gesamten Monitors angegeben. Es gilt
-func Open(rot RotationType) *GC9503CV {
+func Open(rot geom.RotationType) *GC9503CV {
 	var offset geom.Point[int]
 	var dispSize, drawSize geom.Point[int]
 	var err error
@@ -56,11 +59,11 @@ func Open(rot RotationType) *GC9503CV {
 
 	dispSize = geom.Point[int]{shortSide, longSide}
 	switch d.rot {
-	case Rot000, Rot180:
+	case geom.Rot000, geom.Rot180:
 		offset = geom.Point[int]{xOffset, yOffset}
 		drawSize = geom.Point[int]{shortSide, longSide}.Sub(offset.Mul(2))
 
-	case Rot090, Rot270:
+	case geom.Rot090, geom.Rot270:
 		offset = geom.Point[int]{yOffset, xOffset}
 		drawSize = geom.Point[int]{longSide, shortSide}.Sub(offset.Mul(2))
 	}
@@ -100,7 +103,7 @@ func (d *GC9503CV) Close() {
 
 // Führt die Initialisierung des Displays durch. Im Wesentlichen ist damit
 // die Ausfuehrung einer sog. Initialisierungssequenz verbunden.
-func (d *GC9503CV) Init(hwReset bool) (geom.Rectangle[int], geom.Rectangle[int]) {
+func (d *GC9503CV) Init(hwReset bool) {
 	d.Reset(hwReset)
 	for _, obj := range initCmds {
 		d.Cmd(obj.cmd)
@@ -111,7 +114,6 @@ func (d *GC9503CV) Init(hwReset bool) (geom.Rectangle[int], geom.Rectangle[int])
 			time.Sleep(time.Duration(obj.delay) * time.Millisecond)
 		}
 	}
-	return d.dispBounds, d.drawBounds
 }
 
 func (d *GC9503CV) DispBounds() geom.Rectangle[int] {
@@ -201,9 +203,9 @@ func (d *GC9503CV) Reset(hw bool) {
 }
 
 func (d *GC9503CV) PartialArea(rect image.Rectangle) {
-	buffer   := []byte{0, 0, 0, 0}
+	buffer := []byte{0, 0, 0, 0}
 	startRow := int16(d.dispBounds.Min.Y - rect.Min.Y)
-	endRow   := int16(d.dispBounds.Max.Y - rect.Min.Y)
+	endRow := int16(d.dispBounds.Max.Y - rect.Min.Y)
 	buffer[0] = byte((startRow >> 8) & 0xff)
 	buffer[1] = byte(startRow & 0x00ff)
 	buffer[2] = byte((endRow >> 8) & 0xff)
@@ -213,17 +215,17 @@ func (d *GC9503CV) PartialArea(rect image.Rectangle) {
 	d.DataArray(buffer)
 }
 
-func (d *GC9503CV) Matrix() (*geom.Matrix) {
+func (d *GC9503CV) Matrix() *geom.Matrix {
 	m := geom.Identity()
 	switch d.rot {
-	case Rot000:
-	case Rot090:
+	case geom.Rot000:
+	case geom.Rot090:
 		m = m.Translate(d.dispBounds.SW().ToFloat())
 		m = m.Rotate(3.0 * math.Pi / 2.0)
-	case Rot180:
+	case geom.Rot180:
 		m = m.Translate(d.dispBounds.SE().ToFloat())
 		m = m.Rotate(math.Pi)
-	case Rot270:
+	case geom.Rot270:
 		m = m.Translate(d.dispBounds.NE().ToFloat())
 		m = m.Rotate(math.Pi / 2.0)
 	default:
@@ -238,14 +240,14 @@ func (d *GC9503CV) Matrix() (*geom.Matrix) {
 func (d *GC9503CV) Canvas() (canv *Canvas) {
 	canv = newCanvas(d.dispBounds.Size())
 	switch d.rot {
-	case Rot000:
-	case Rot090:
+	case geom.Rot000:
+	case geom.Rot090:
 		canv.GC.Translate(d.dispBounds.SW().ToFloat().AsCoord())
 		canv.GC.Rotate(3.0 * math.Pi / 2.0)
-	case Rot180:
+	case geom.Rot180:
 		canv.GC.Translate(d.dispBounds.SE().ToFloat().AsCoord())
 		canv.GC.Rotate(math.Pi)
-	case Rot270:
+	case geom.Rot270:
 		canv.GC.Translate(d.dispBounds.NE().ToFloat().AsCoord())
 		canv.GC.Rotate(math.Pi / 2.0)
 	default:
@@ -260,7 +262,7 @@ func (d *GC9503CV) Canvas() (canv *Canvas) {
 func (d *GC9503CV) Send(img *iliimg.ILIImage) {
 	//log.Printf("Bounds of the image: %v", img.Bounds())
 	if d.dispBounds.Min.Y != img.Rect.Min.Y ||
-			d.dispBounds.Max.Y != img.Rect.Max.Y {
+		d.dispBounds.Max.Y != img.Rect.Max.Y {
 		d.PartialArea(img.Rect)
 	}
 	if d.fb.Bounds() != img.Bounds() {

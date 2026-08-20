@@ -9,11 +9,9 @@ import (
 	"periph.io/x/conn/v3/gpio"
 	"periph.io/x/conn/v3/gpio/gpioreg"
 
-	//"github.com/stefan-muehlebach/adatft/iliimg"
 	"gc9503cv/gc9503cv/geom"
 	"gc9503cv/gc9503cv/iliimg"
-
-	"github.com/stefan-muehlebach/framebuffer"
+	"gc9503cv/gc9503cv/framebuffer"
 )
 
 const (
@@ -322,13 +320,8 @@ var (
 		{0x9B, []byte{0x22}, 0},
 		{0x82, []byte{0x00, 0x00}, 0},
 		{0x80, []byte{0x54}, 0},
-		// DISPLAY_CTL
 		{RGBIFCTL, []byte{0x00, 0x0a, 0x0a, 0x0a, 0x0a}, 0},
-		// RGB Interface Signals Control
-		// 0x33 - Bis auf die Raender: einwandfrei; Farben ok.
 		{DISPCTL, []byte{0x33}, 0},
-		// Interface Pixel Format
-		// 0x60 - Use 18Bit RGB interface; corresponds to DPI[2:0]
 		{PIXFMT, []byte{0x60}, 0},
 
 		{0x7A, []byte{0x0F, 0x13}, 0},

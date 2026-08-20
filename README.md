@@ -11,27 +11,27 @@ Als Programmiersprache war Go vorgesehen, da ich von Anfang an geplant hatte, da
 
 ## Pin-Belegung des Monitors
 
-| Pin-Nr | Pin-Name | Beschreibung |
-| --- | --- | --- |
-| 1 | LEDA | Anode der Hintergrundbeleuchtung |
-| 2 | LEDK | Kathode der Hintergrundbeleuchtung |
-| 3 | LEDK | Kathode der Hintergrundbeleuchtung |
-| 4 | GND  | Common Ground |
-| 5 | VDD  | Stromversorgung des Controllers (+3.2V) |
-| 6 | RST  | Reset Input Pin (low active) |
-| 7 | NC   | not connected |
-| 8 | NC   | not connected |
-| 9 | SDA  | Datenleitung (Input/Output) des SPI-Interfaces |
-| 10| SCK  | Clock-Leitung des SPI-Interfaces |
-| 11| CS   | Chip-Select des SPI-Interfaces (low active) |
-| 12| PCLK | Pixel-Clock Signal des RGB-Interfaces (rising edge) |
-| 13| DE   | Data-Enable Signal des RGB-Interfaces (high active) |
-| 14| VS   | Vertical-Sync Signal des RGB-Interfaces (low active) |
-| 15| HS   | Horizontal-Sync Signal des RGB-Interfaces (low active) |
-| 16-33 | DB0-DB17 | 18 Bit parallel RGB-Interface |
-| 34| GND  | Common Ground |
-| 35-39 | TP | Vorgesehen für ein kapazitives Touch-Panel |
-| 40 | GND | Common Ground |
+| Pin-Nr | Pin-Name | Gruppe | Beschreibung |
+| ---: | --- | --- | --- |
+| 1 | LEDA | LED | Anode der Hintergrundbeleuchtung |
+| 2 | LEDK | LED | Kathode der Hintergrundbeleuchtung |
+| 3 | LEDK | LED | Kathode der Hintergrundbeleuchtung |
+| 4 | GND  | | Common Ground |
+| 5 | VDD  | | Stromversorgung des Controllers (+3.2V) |
+| 6 | RST  | | Reset Input Pin (low active) |
+| 7 | NC   | | not connected |
+| 8 | NC   | | not connected |
+| 9 | SDA  | SPI | Datenleitung (Input/Output) des SPI-Interfaces |
+| 10| SCK  | SPI | Clock-Leitung des SPI-Interfaces |
+| 11| CS   | SPI | Chip-Select des SPI-Interfaces (low active) |
+| 12| PCLK | RGB | Pixel-Clock Signal des RGB-Interfaces (rising edge) |
+| 13| DE   | RGB | Data-Enable Signal des RGB-Interfaces (high active) |
+| 14| VS   | RGB | Vertical-Sync Signal des RGB-Interfaces (low active) |
+| 15| HS   | RGB | Horizontal-Sync Signal des RGB-Interfaces (low active) |
+| 16-33 | DB0-DB17 | RGB | 18 Bit parallel RGB-Interface |
+| 34| GND  | | Common Ground |
+| 35-39 | TP | | Vorgesehen für ein kapazitives Touch-Panel |
+| 40 | GND | | Common Ground |
 
 
 

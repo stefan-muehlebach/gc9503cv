@@ -33,7 +33,7 @@ func main() {
 	var rotate geom.RotationType
 	var numObjs int
 	var applet Applet
-	var pointList []Point
+	//var pointList []Point
 
 	flag.IntVar(&numObjs, "numObjs", 0, "Number of objects.")
 	flag.IntVar(&progIdx, "prog", 0, "Index of program to play.")
@@ -51,16 +51,17 @@ func main() {
 	dispBounds = disp.DispBounds()
 	drawBounds = disp.DrawBounds()
 	drawRect = disp.DrawRect()
-	m := disp.Matrix()
+	//m := disp.Matrix()
 
-	log.Printf("display bounds: %v", dispBounds)
-	log.Printf("drawing bounds: %v", drawBounds)
-	log.Printf("drawing rect  : %v", drawRect)
+	//log.Printf("display bounds: %v", dispBounds)
+	//log.Printf("drawing bounds: %v", drawBounds)
+	//log.Printf("drawing rect  : %v", drawRect)
 
 	app = NewApplication(disp)
-	log.Printf("app.mainImg: %v", app.mainImg.Bounds())
-	log.Printf("app.pixBuf : %v", app.pixBuf.Bounds())
+	//log.Printf("app.mainImg: %v", app.mainImg.Bounds())
+	//log.Printf("app.pixBuf : %v", app.pixBuf.Bounds())
 
+/*
 	switch rotate {
 	case geom.Rot000, geom.Rot180:
 		pointList = []Point{
@@ -77,10 +78,11 @@ func main() {
 			{960, 360},
 		}
 	}
-	for _, pt := range pointList {
-		ptNew := m.Transform(pt)
-		log.Printf("%v -> %v", pt, ptNew)
-	}
+*/
+   	//for _, pt := range pointList {
+	//	ptNew := m.Transform(pt)
+	//	log.Printf("%v -> %v", pt, ptNew)
+	//}
 
 	switch progIdx {
 	case 0:

@@ -2,10 +2,10 @@ package main
 
 import (
 	"container/list"
-	"gc9503cv/gc9503cv/geom"
+	"github.com/stefan-muehlebach/gc9503cv/geom"
 	"github.com/stefan-muehlebach/gg"
 	"github.com/stefan-muehlebach/gg/colors"
-	"log"
+	//"log"
 	"math/rand/v2"
 	"time"
 )
@@ -24,99 +24,32 @@ func RandVel(low, high float64) float64 {
 }
 
 type CircleAnim struct {
-	callbackEmbed
+	eventHandlerEmbed
 	appletEmbed
 	objList   *list.List
 	activeObj *Circle
 }
 
 func NewCircleAnimation(bounds geom.Rectangle[int], numObjs int) *CircleAnim {
-	a := &CircleAnim{}
+	//var circ *Circle
 
+	a := &CircleAnim{}
 	a.bounds = bounds
 	a.gc = gg.NewContext(a.bounds.Dx(), a.bounds.Dy())
 	if numObjs <= 0 {
 		numObjs = defNumCircles
 	}
 	rect := a.bounds.Sub(a.bounds.Min).ToFloat()
-	a.objList = list.New()
+	a.Root = NewGroup()
+	a.Root.SetPos(Point{})
+	a.Root.SetSize(Point{rect.Dx(), rect.Dy()})
+	grp := NewGroup()
+	grp.SetPos(Point{})
+	grp.SetSize(Point{rect.Dx(), rect.Dy()/2})
+	a.Root.Add(grp)
 	for range numObjs {
-		a.objList.PushBack(NewCircle(rect))
+		grp.Add(NewCircle(rect))
 	}
-	a.SetOnMove(func(ev MouseEvent) {
-		for e := a.objList.Back(); e != nil; e = e.Prev() {
-			c := e.Value.(*Circle)
-			if c.Contains(ev.Pos.ToFloat()) {
-				if a.activeObj != nil {
-					if a.activeObj == c {
-						return
-					}
-					a.activeObj.isActive = false
-					a.activeObj = nil
-				}
-				a.activeObj = c
-				a.activeObj.isActive = true
-				return
-			}
-		}
-		if a.activeObj != nil {
-			a.activeObj.isActive = false
-			a.activeObj = nil
-		}
-	})
-	a.SetOnDrag(func(ev MouseEvent) {
-		log.Printf("'Drag' received")
-
-	})
-	a.SetOnPress(func(ev MouseEvent) {
-		log.Printf("'Press' received")
-		
-	})
-	a.SetOnLongPress(func(ev MouseEvent) {
-		log.Printf("'LongPress' received")
-		if a.activeObj == nil {
-			return
-		}
-		for e := a.objList.Front(); e != nil; e = e.Next() {
-			if e.Value.(*Circle) == a.activeObj {
-				a.objList.MoveToFront(e)
-				break
-			}
-		}
-	})
-	a.SetOnClick(func(ev MouseEvent) {
-		log.Printf("'Click' received")
-		//log.Printf("%v", ev)
-		switch ev.Button {
-		case LeftButton:
-			if a.activeObj == nil {
-				circ := NewCircle(rect)
-				circ.pos = ev.Pos.ToFloat()
-				circ.r = 40.0
-				a.objList.PushBack(circ)
-				a.activeObj = circ
-				a.activeObj.isActive = true
-			} else {
-				if !a.activeObj.isSelected {
-					a.activeObj.isSelected = true
-				} else {
-					a.activeObj.isSelected = false
-				}
-			}
-
-		case RightButton:
-			if a.activeObj == nil {
-				return
-			}
-			for e := a.objList.Front(); e != nil; e = e.Next() {
-				if e.Value.(*Circle) == a.activeObj {
-					a.objList.Remove(e)
-					a.activeObj = nil
-					break
-				}
-			}
-		}
-	})
 	return a
 }
 
@@ -127,49 +60,75 @@ func (a *CircleAnim) Init() {
 }
 
 func (a *CircleAnim) Update(dt time.Duration) {
-	for e := a.objList.Front(); e != nil; e = e.Next() {
-		c := e.Value.(*Circle)
-		c.Update(dt)
-	}
+	a.Root.Update(dt)
 }
 
 func (a *CircleAnim) Refresh() {
 	a.gc.Clear(colors.Black)
-	for e := a.objList.Front(); e != nil; e = e.Next() {
-		c := e.Value.(*Circle)
-		c.Draw(a.gc)
+	a.Root.Draw(a.gc)
+}
+
+func (a *CircleAnim) OnInputEvent(ev MouseEvent) {
+	if n := a.Root.Contains(ev.Pos); n != nil {
+		n.OnInputEvent(ev)
 	}
-	
-	//draw.Draw(img, a.bounds.ToInt(), a.gc.Image().(*image.RGBA),
-	//	image.Point{}, draw.Over)
 }
 
 //-----------------------------------------------------------------------
 
 type Circle struct {
+	nodeEmbed
 	rect                 Rectangle
 	pos, vel             Point
 	r, rMin, rMax, dr    float64
 	lineColor, fillColor colors.RGBA
-	isActive, isSelected bool
+	isActive, isSelected, isBlocked bool
 }
 
 func NewCircle(rect Rectangle) *Circle {
+	var dp Point
+
 	c := &Circle{}
+	c.Init(c)
 	c.rect = rect
-	c.rMin = 30.0
+	c.rMin = 20.0
 	c.rMax = 50.0
 	c.r = c.rMin + (c.rMax-c.rMin)*rand.Float64()
-	//c.dr = 0.2 + 0.4*rand.Float64()
-
 	c.pos = rect.Inset(c.r, c.r).RelPos(rand.Float64(), rand.Float64())
-	//c.vel = Point{RandVel(1.0, 3.0), RandVel(1.0, 3.0)}
+	c.vel = Point{RandVel(2.0, 5.0), RandVel(2.0, 5.0)}
 	c.lineColor = colors.White
 	c.fillColor = colors.RandColorByGroup(colors.Blues).Alpha(0.8)
+
+	c.SetOnPress(func(ev MouseEvent) {
+		if ev.Button.IsSet(LeftButton) {
+			c.isBlocked = true
+			dp = ev.Pos.Sub(c.pos)
+		}
+	})
+
+	c.SetOnDrag(func(ev MouseEvent) {
+		c.SetPos(ev.Pos.Sub(dp))
+	})
+
+	c.SetOnRelease(func(ev MouseEvent) {
+		if ev.Button.IsSet(LeftButton) {
+			c.isBlocked = false
+		}
+	})
+
+	c.SetOnClick(func(ev MouseEvent) {
+		if ev.Button.IsSet(RightButton) {
+			// Kreis loeschen
+		}
+	})
+	
 	return c
 }
 
 func (c *Circle) Update(dt time.Duration) {
+	if c.isBlocked {
+		return
+	}
 	c.pos.Move(c.vel)
 	if c.pos.X-c.r < c.rect.Min.X || c.pos.X+c.r > c.rect.Max.X {
 		c.vel.X *= -1.0
@@ -186,8 +145,12 @@ func (c *Circle) Update(dt time.Duration) {
 	}
 }
 
-func (c *Circle) Contains(pt Point) bool {
-	return c.pos.Distance(pt) <= c.r
+func (c *Circle) Contains(pt Point) Node {
+	if c.pos.Distance(pt) <= c.r {
+		return c
+	} else {
+		return nil
+	}
 }
 
 func (c *Circle) Draw(gc *gg.Context) {

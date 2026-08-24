@@ -1,19 +1,30 @@
 package main
 
 import (
-	"image"
 	"log"
-	"math"
 	"time"
 
 	"periph.io/x/conn/v3/gpio"
 	"periph.io/x/conn/v3/gpio/gpioreg"
 
-	"gc9503cv/gc9503cv/geom"
-	"gc9503cv/gc9503cv/iliimg"
-	"gc9503cv/gc9503cv/framebuffer"
+	"github.com/stefan-muehlebach/gc9503cv/geom"
+	"github.com/stefan-muehlebach/gc9503cv/iliimg"
+	"github.com/stefan-muehlebach/gc9503cv/framebuffer"
 )
 
+// Folgende Eintraege sind in der Datei [config.txt] zu machen, damit der
+// RaspberryPi den GPIO als Display Parallel Interface (DPI) verwendet.
+//
+//   gpio=0-21=a2
+//
+//   dtparam=drm_fb2_vc4=on
+//
+//   dtoverlay=vc4-kms-dpi-generic
+//   dtparam=clock-frequency=20000000,rotate=0,rgb666
+//   dtparam=hactive=480,hsync=5,hbp=20,hfp=20
+//   dtparam=vactive=960,vsync=5,vbp=10,vfp=10
+//   dtparam=width-mm=55,height-mm=147
+//
 const (
 	defMOSIPinName = "GPIO23"
 	defSCKPinName  = "GPIO24"
@@ -34,9 +45,10 @@ type (
 
 //----------------------------------------------------------------------------
 
-// Dies ist der Datentyp, welche für die Verbindung zum 6.2" TFT-Display
-// steht. Voraussetzung ist das Device Tree Overlay 'vc4-kms-dpi-generic'
-// und ein Framebuffer Overlay.
+// Dies ist der Datentyp, welcher fuer die Verbindung zum TFT-Display steht.
+// Er enthaelt zum einen die SPI-Verbindung zur Konfiguration des Displays
+// und zum anderen eine Verbindung zum Framebuffer, ueber welchen die
+// eigentlichen Bilddaten gesendet werden.
 type GC9503CV struct {
 	mosi, sck, cs, rst     gpio.PinIO
 	fb                     *framebuffer.Device
@@ -46,7 +58,7 @@ type GC9503CV struct {
 
 // Geoeffnet wird die Verbindung zum neuen Monitor (zusammen mit weiteren
 // Objekten) durch die Funktion Open(). Mit rot wird die gewuenschte
-// Rotation des gesamten Monitors angegeben. Es gilt
+// Rotation des gesamten Monitors angegeben.
 func Open(rot geom.RotationType) *GC9503CV {
 	var offset geom.Point[int]
 	var dispSize, drawSize geom.Point[int]
@@ -85,9 +97,15 @@ func Open(rot geom.RotationType) *GC9503CV {
 	d.cs.Out(gpio.High)
 	d.rst.Out(gpio.High)
 
+	// Oeffnet eine Verbindung zum Device, welches fuer den Framebuffer
+    // steht. Die korrekte Konfiguration des Framebuffers muss beim 
+    // Booten des Systems ueber das Overlay vc4-kms-dpi-generic erfolgen.
 	d.fb, err = framebuffer.Open(defFBDevName)
 	if err != nil {
 		log.Fatal("Couldn't open framebuffer")
+	}
+	if d.fb.Bounds() != d.dispBounds.ToInt() {
+		log.Fatal("Framebuffer and Display haven't the same dimensions")
 	}
 
 	return d
@@ -100,7 +118,7 @@ func (d *GC9503CV) Close() {
 }
 
 // Führt die Initialisierung des Displays durch. Im Wesentlichen ist damit
-// die Ausfuehrung einer sog. Initialisierungssequenz verbunden.
+// die Ausfuehrung der Initialisierungssequenz verbunden.
 func (d *GC9503CV) Init(hwReset bool) {
 	d.Reset(hwReset)
 	for _, obj := range initCmds {
@@ -114,26 +132,28 @@ func (d *GC9503CV) Init(hwReset bool) {
 	}
 }
 
+// Mit DispBounds werden die Abmessungen des Displays (in Pixeln) als 
+// Rechteck retourniert. Die Werte sind unabhaengig von einer allfaelligen
+// Rotation, da die Rotation nicht hardwareseitig durchgefuehrt werden kann.
 func (d *GC9503CV) DispBounds() geom.Rectangle[int] {
 	return d.dispBounds
 }
 
+// Mit DrawBounds wird der Zeichenbereich des Displays (in Pixeln) als
+// Rechteck retourniert. Die Koordinaten beziehen sich auf den Punkt (0,0)
+// des Displays, allfaellige Offsets sind in den Groessenabgaben enthalten.
 func (d *GC9503CV) DrawBounds() geom.Rectangle[int] {
 	return d.drawBounds
 }
 
+// Mit DrawRect schliesslich erhaelt man ein Rechteck, welches dem Zeichen-
+// bereich entspricht, aber bei (0,0) beginnt. Fuer alle Verarbeitungen
+// mit dem Zeichenbereich sind diese Daten zu verwenden!
 func (d *GC9503CV) DrawRect() geom.Rectangle[int] {
 	return geom.Rectangle[int]{Max: d.drawBounds.Size()}
 }
 
-// Die folgenden Befehle beziehen sich auf den SPI-Bus, ueber welchen der
-// Display konfiguriert werden kann. Ueber diesen SPI-Verbindung werden
-// keine Bilddaten versendet, dies uebernimmt in der Folge der Framebuffer
-// ueber die parallele DPI-Schnittstelle. Das wir durch die parallele
-// RGB-Schnittstelle sehr viele Pins des GPIO belegen (insbesondere
-// die SPI-Pins) muss SPI "zu Fuss" betrieben werden.
-
-// Sendet 'cmd' als Befehl zum Display.
+// Sendet 'cmd' als Befehl via SPI-Bus zum Display.
 func (d *GC9503CV) Cmd(cmd uint8) {
 	d.cs.Out(gpio.Low)
 	d.mosi.Out(gpio.Low)
@@ -143,7 +163,7 @@ func (d *GC9503CV) Cmd(cmd uint8) {
 	d.cs.Out(gpio.High)
 }
 
-// Sendet das Byte 'value' als Datenpaket zum Display
+// Sendet 'value' als Datenpaket via SPI-Bus zum Display.
 func (d *GC9503CV) Data8(value uint8) {
 	d.cs.Out(gpio.Low)
 	d.mosi.Out(gpio.High)
@@ -159,7 +179,7 @@ func (d *GC9503CV) Data32(value uint32) {
 	log.Fatal("Data32() is not implemented yet!")
 }
 
-// Sendet die Daten aus dem Slice 'buf' als Daten zum ILI9341. Dies ist bloss
+// Sendet die Daten aus dem Slice 'buf' als Daten zum Display. Dies ist bloss
 // eine Hilfsfunktion, damit das Senden von Daten aus einem Slice einfacher
 // aufzurufen ist und die ganzen Konvertierungen nicht im Hauptprogramm
 // sichtbar sind.
@@ -170,7 +190,7 @@ func (d *GC9503CV) DataArray(buf []byte) {
 }
 
 // Das eigentliche Versenden der Daten erfolgt mit dieser (nicht exportierten)
-// Funktion - wie gesagt: SPI by hand...
+// Funktion - wie gesagt: "SPI zu Fuss"...
 func (d *GC9503CV) send(b byte) {
 	for range 8 {
 		d.sck.Out(gpio.Low)
@@ -186,8 +206,8 @@ func (d *GC9503CV) send(b byte) {
 
 // Reset ist eine Hilfsfunktion, mit welcher sich der Display in einen
 // definierten Ausgangszustand versetzen laesst. Unser Display kennt
-// Software- und auch Hardware-Reset. Mit dem Parameter 'hw' kann ein
-// Hardware-Reset ausgefuehrt werden.
+// Software- und auch Hardware-Reset. Ist hw auf true gesetzt, wird ein
+// Hardware-Reset durchgefuehrt, andernfalls ein Software-Reset.
 func (d *GC9503CV) Reset(hw bool) {
 	if hw {
 		d.rst.Out(gpio.Low)
@@ -200,6 +220,13 @@ func (d *GC9503CV) Reset(hw bool) {
 	}
 }
 
+// Mit der Funktion PartialArea kann man den Bereich einschraenken, der
+// mit dem naechsten Refresh gezeichnet wird.
+// TO DO: mit der Umstellung auf das RGB-Interface dauert das Senden des
+// gesamten Bildschirminhaltes nur noch ein Bruchteil dessen, was fuer
+// das Senden via SPI-Interface notwendig war. Es fragt sich, ob es diese
+// Funktion ueberhaupt noch braucht.
+/*
 func (d *GC9503CV) PartialArea(rect image.Rectangle) {
 	buffer := []byte{0, 0, 0, 0}
 	startRow := int16(d.dispBounds.Min.Y - rect.Min.Y)
@@ -212,7 +239,14 @@ func (d *GC9503CV) PartialArea(rect image.Rectangle) {
 	d.Cmd(PARTAREA)
 	d.DataArray(buffer)
 }
+*/
 
+// Mit Matrix kann eine Transformationsmatrix bezogen werden, welche alle
+// Transformationen enthaelt, um Zeichenkoordinaten in Display-Koordianten 
+// umzurechnen.
+// TO DO: mit der neuen Transformation in der Funktion Convert des Objektes
+// ILIImage wird diese Transformation eigentlich nicht mehr benoetigt.
+/*
 func (d *GC9503CV) Matrix() *geom.Matrix {
 	m := geom.Identity()
 	switch d.rot {
@@ -233,42 +267,19 @@ func (d *GC9503CV) Matrix() *geom.Matrix {
 	m = m.Translate(offset.ToFloat())
 	return m
 }
-
-/*
-func (d *GC9503CV) Canvas() (canv *Canvas) {
-	canv = newCanvas(d.dispBounds.Size())
-	switch d.rot {
-	case geom.Rot000:
-	case geom.Rot090:
-		canv.GC.Translate(d.dispBounds.SW().ToFloat().AsCoord())
-		canv.GC.Rotate(3.0 * math.Pi / 2.0)
-	case geom.Rot180:
-		canv.GC.Translate(d.dispBounds.SE().ToFloat().AsCoord())
-		canv.GC.Rotate(math.Pi)
-	case geom.Rot270:
-		canv.GC.Translate(d.dispBounds.NE().ToFloat().AsCoord())
-		canv.GC.Rotate(math.Pi / 2.0)
-	default:
-		log.Fatal("unknown rotation!")
-	}
-	offset := d.DrawBounds().Min
-	canv.GC.Translate(offset.ToFloat().AsCoord())
-	return canv
-}
 */
 
 func (d *GC9503CV) Send(img *iliimg.ILIImage) {
 	//log.Printf("Bounds of the image: %v", img.Bounds())
-	if d.dispBounds.Min.Y != img.Rect.Min.Y ||
-		d.dispBounds.Max.Y != img.Rect.Max.Y {
-		d.PartialArea(img.Rect)
-	}
+	//if d.dispBounds.Min.Y != img.Rect.Min.Y ||
+	//	d.dispBounds.Max.Y != img.Rect.Max.Y {
+	//	d.PartialArea(img.Rect)
+	//}
 	if d.fb.Bounds() != img.Bounds() {
 		log.Fatal("By now, image and screen must have equal size")
 	}
-	//i := img.PixOffset(img.Rect.Min.X, img.Rect.Min.Y)
 	copy(d.fb.Pix, img.Pix)
-	d.Cmd(PARTOFF)
+	//d.Cmd(PARTOFF)
 }
 
 //----------------------------------------------------------------------------
@@ -377,6 +388,85 @@ var (
 			0x32, 0x02, 0x76, 0x02, 0xcc, 0x03, 0x18, 0x03, 0x55, 0x03, 0x6b,
 			0x03, 0x9b, 0x03, 0xac, 0x03, 0xb8, 0x03, 0xe0, 0x03, 0xFF}, 0},
 
+		{SLEEPOUT, []byte{0x00}, 120},
+		{DISPON, []byte{0x00}, 20},
+	}
+
+	initCmds02 = []cmdSequence{
+		{EXTCMDEN, []byte{0x55, 0xAA, 0x52, 0x08, 0x00}, 0},
+		{0xF6, []byte{0x5A, 0x87}, 0},
+		{0xC1, []byte{0x3F}, 0},
+		{0xC2, []byte{0x0E}, 0},
+		{0xC6, []byte{0xF8}, 0},
+		{0xC9, []byte{0x10}, 0},
+		{0xCD, []byte{0x25}, 0},
+		{0xF8, []byte{0x8A}, 0},
+		{0xAC, []byte{0x45}, 0},
+		{0xA0, []byte{0xCC}, 0},
+		{0xA7, []byte{0x47}, 0},
+		{0xFA, []byte{0x00, 0x00, 0x00, 0x04}, 0},
+		{0xA3, []byte{0xEE}, 0},
+		{0xFD, []byte{0x28, 0x28, 0x00}, 0},
+		{0x71, []byte{0x48}, 0},
+		{0x72, []byte{0x48}, 0},
+		{0x73, []byte{0x00, 0x44}, 0},
+		{0x97, []byte{0xEE}, 0},
+		{0x83, []byte{0x93}, 0},
+		{0x9A, []byte{0x72}, 0},
+		{0x9B, []byte{0x5A}, 0},
+		{0x82, []byte{0x2c, 0x2c}, 0},
+		{DISPCTL, []byte{0x10}, 0},
+		{0x6D, []byte{0x0c, 0x03, 0x1e, 0x02, 0x08, 0x1a, 0x19, 0x03, 0x0d,
+			0x0e, 0x0f, 0x10, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E,
+			0x11, 0x12, 0x13, 0x14, 0x03, 0x19, 0x1a, 0x07, 0x01, 0x1E, 0x03,
+			0x0c}, 0},
+		{0x64, []byte{0x38, 0x04, 0x03, 0xc4, 0x03, 0x03, 0x38, 0x02, 0x03,
+			0xc6, 0x03, 0x03, 0x2C, 0x7A, 0x2C, 0x7A}, 0},
+		{0x65, []byte{0x38, 0x08, 0x03, 0xc0, 0x03, 0x03, 0x38, 0x06, 0x03,
+			0xc2, 0x03, 0x03, 0x2C, 0x7A, 0x2C, 0x7A}, 0},
+		{0x66, []byte{0x83, 0xd0, 0x03, 0xc4, 0x03, 0x03, 0x83, 0xd0, 0x03,
+			0xc4, 0x03, 0x03, 0x2C, 0x7A, 0x2C, 0x7A}, 0},
+		{0x67, []byte{0x30, 0x01, 0x01, 0xe1, 0x03, 0x03, 0x30, 0x02, 0x01,
+			0xe2, 0x03, 0x03, 0x7A, 0x7A, 0x7A, 0x7A}, 0},
+		{0x68, []byte{0x77, 0x08, 0x0a, 0x08, 0x09, 0x00, 0x00, 0x18, 0x0a,
+			0x08, 0x09, 0x00, 0x00}, 0},
+		{0x60, []byte{0x38, 0x0c, 0x3c, 0x3c, 0x38, 0x0b, 0x3c, 0x3c}, 0},
+		{0x63, []byte{0x38, 0x0a, 0x3c, 0x3c, 0x38, 0x09, 0x3c, 0x3c}, 0},
+		{0x6B, []byte{0x07}, 0},
+		{0x7A, []byte{0x0F, 0x13}, 0},
+		{0x7B, []byte{0x0F, 0x13}, 0},
+		{0xD1, []byte{0x00, 0x00, 0x00, 0x10, 0x00, 0x22, 0x00, 0x2c, 0x00,
+			0x2e, 0x00, 0x56, 0x00, 0x58, 0x00, 0x7c, 0x00, 0x9a, 0x00, 0xce,
+			0x00, 0xfa, 0x01, 0x4c, 0x01, 0x94, 0x01, 0x96, 0x01, 0xda, 0x02,
+			0x32, 0x02, 0x76, 0x02, 0xcc, 0x03, 0x18, 0x03, 0x55, 0x03, 0x6b,
+			0x03, 0x9b, 0x03, 0xac, 0x03, 0xb8, 0x03, 0xe0, 0x03, 0xFF}, 0},
+		{0xD2, []byte{0x00, 0x00, 0x00, 0x10, 0x00, 0x22, 0x00, 0x2c, 0x00,
+			0x2e, 0x00, 0x56, 0x00, 0x58, 0x00, 0x7c, 0x00, 0x9a, 0x00, 0xce,
+			0x00, 0xfa, 0x01, 0x4c, 0x01, 0x94, 0x01, 0x96, 0x01, 0xda, 0x02,
+			0x32, 0x02, 0x76, 0x02, 0xcc, 0x03, 0x18, 0x03, 0x55, 0x03, 0x6b,
+			0x03, 0x9b, 0x03, 0xac, 0x03, 0xb8, 0x03, 0xe0, 0x03, 0xFF}, 0},
+		{0xD3, []byte{0x00, 0x00, 0x00, 0x10, 0x00, 0x22, 0x00, 0x2c, 0x00,
+			0x2e, 0x00, 0x56, 0x00, 0x58, 0x00, 0x7c, 0x00, 0x9a, 0x00, 0xce,
+			0x00, 0xfa, 0x01, 0x4c, 0x01, 0x94, 0x01, 0x96, 0x01, 0xda, 0x02,
+			0x32, 0x02, 0x76, 0x02, 0xcc, 0x03, 0x18, 0x03, 0x55, 0x03, 0x6b,
+			0x03, 0x9b, 0x03, 0xac, 0x03, 0xb8, 0x03, 0xe0, 0x03, 0xFF}, 0},
+		{0xD4, []byte{0x00, 0x00, 0x00, 0x10, 0x00, 0x22, 0x00, 0x2c, 0x00,
+			0x2e, 0x00, 0x56, 0x00, 0x58, 0x00, 0x7c, 0x00, 0x9a, 0x00, 0xce,
+			0x00, 0xfa, 0x01, 0x4c, 0x01, 0x94, 0x01, 0x96, 0x01, 0xda, 0x02,
+			0x32, 0x02, 0x76, 0x02, 0xcc, 0x03, 0x18, 0x03, 0x55, 0x03, 0x6b,
+			0x03, 0x9b, 0x03, 0xac, 0x03, 0xb8, 0x03, 0xe0, 0x03, 0xFF}, 0},
+		{0xD5, []byte{0x00, 0x00, 0x00, 0x10, 0x00, 0x22, 0x00, 0x2c, 0x00,
+			0x2e, 0x00, 0x56, 0x00, 0x58, 0x00, 0x7c, 0x00, 0x9a, 0x00, 0xce,
+			0x00, 0xfa, 0x01, 0x4c, 0x01, 0x94, 0x01, 0x96, 0x01, 0xda, 0x02,
+			0x32, 0x02, 0x76, 0x02, 0xcc, 0x03, 0x18, 0x03, 0x55, 0x03, 0x6b,
+			0x03, 0x9b, 0x03, 0xac, 0x03, 0xb8, 0x03, 0xe0, 0x03, 0xFF}, 0},
+		{0xD6, []byte{0x00, 0x00, 0x00, 0x10, 0x00, 0x22, 0x00, 0x2c, 0x00,
+			0x2e, 0x00, 0x56, 0x00, 0x58, 0x00, 0x7c, 0x00, 0x9a, 0x00, 0xce,
+			0x00, 0xfa, 0x01, 0x4c, 0x01, 0x94, 0x01, 0x96, 0x01, 0xda, 0x02,
+			0x32, 0x02, 0x76, 0x02, 0xcc, 0x03, 0x18, 0x03, 0x55, 0x03, 0x6b,
+			0x03, 0x9b, 0x03, 0xac, 0x03, 0xb8, 0x03, 0xe0, 0x03, 0xFF}, 0},
+		{PIXFMT, []byte{0x66}, 0},
+		{RGBIFCTL, []byte{0x00, 0x0a, 0x0a, 0x0a, 0x0a}, 0},
 		{SLEEPOUT, []byte{0x00}, 120},
 		{DISPON, []byte{0x00}, 20},
 	}

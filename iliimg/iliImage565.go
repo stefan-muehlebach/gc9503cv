@@ -3,7 +3,7 @@
 package iliimg
 
 import (
-	"gc9503cv/gc9503cv/geom"
+	"github.com/stefan-muehlebach/gc9503cv/geom"
 	"image"
 	"image/color"
 )

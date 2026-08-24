@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 	//"fmt"
-	"gc9503cv/gc9503cv/geom"
+	"github.com/stefan-muehlebach/gc9503cv/geom"
 	"github.com/holoplot/go-evdev"
 )
 
@@ -16,7 +16,6 @@ import (
 // rohen Ereginisse vom Touchscreen (Press, Drag, Release) diese Events zu
 // erzeugen.
 type MouseEventType uint32
-type MouseButtonType byte
 
 const (
 	// Mit Einfuehrung der Maus, wird dieses Event (fahren ohne eine Taste
@@ -51,11 +50,23 @@ const (
 	numEvents
 )
 
+type MouseButtonType byte
+
 const (
 	LeftButton MouseButtonType = (1 << iota)
 	MiddleButton
 	RightButton
 )
+
+func (b MouseButtonType) IsSet(val MouseButtonType) bool {
+    if b&val != 0x00 {
+        return true
+    } else {
+        return false
+    }
+}
+
+//----------------------------------------------------------------------------
 
 const (
 	// TapDuration ist die Zeit, welche max. zwischen Press und Release
@@ -218,39 +229,6 @@ func (m *Mouse) enqueueEvent(ev MouseEvent) {
 
 //-----------------------------------------------------------------------------
 
-/*
-type MouseEventIface interface {
-	Type() MouseEventType
-	Time() time.Time
-}
-
-type mouseEventEmbed struct {
-	typ MouseEventType
-	tim time.Time
-}
-
-func (ev *mouseEventEmbed) Type() MouseEventType {
-	return ev.typ
-}
-
-func (ev *mouseEventEmbed) Time() time.Time {
-	return ev.tim
-}
-
-type MouseMoveEvent struct {
-	mouseEventEmbed
-	Step geom.Point[int]
-}
-
-func NewMouseMoveEvent(step geom.Point[int]) MouseEventIface {
-	ev := &MouseMoveEvent{}
-	ev.typ = TypeMove
-	ev.tim = time.Now()
-	ev.Step = step
-	return ev
-}
-*/
-
 func (m *Mouse) processEvents() {
 	var mev MouseEvent
 
@@ -283,7 +261,7 @@ func (m *Mouse) processEvents() {
 				} else {
 					mev.Type = TypeMove
 				}
-				mev.Pos = m.Pos
+				mev.Pos = m.Pos.ToFloat()
 				mev.Time = time.Now()
 				m.enqueueEvent(mev)
 			case evdev.REL_WHEEL:
@@ -306,7 +284,7 @@ func (m *Mouse) processEvents() {
 				mev.Type = TypePress
 				mev.InitTime = time.Now()
 				mev.Time = mev.InitTime
-				mev.InitPos = m.Pos
+				mev.InitPos = m.Pos.ToFloat()
 				mev.Pos = mev.InitPos
 				mev.LongPressed = false
 				switch e.Code {
@@ -336,7 +314,7 @@ func (m *Mouse) processEvents() {
 			} else {
 				mev.Type = TypeRelease
 				mev.Time = time.Now()
-				mev.Pos = m.Pos
+				mev.Pos = m.Pos.ToFloat()
 				m.enqueueEvent(mev)
 
 				if mev.InitPos.Distance(mev.Pos) < NearThreshold &&
@@ -345,7 +323,7 @@ func (m *Mouse) processEvents() {
 					mev.Type = TypeClick
 					m.enqueueEvent(mev)
 				}
-				mev.InitPos = geom.Point[int]{}
+				mev.InitPos = Point{}
 				mev.InitTime = time.Time{}
 				mev.LongPressed = false
 				mev.Button = 0x00
@@ -388,90 +366,9 @@ type Event struct {
 type MouseEvent struct {
 	Type           MouseEventType
 	Time, InitTime time.Time
-	Pos, InitPos   geom.Point[int]
+	Pos, InitPos   Point // geom.Point[int]
 	Button         MouseButtonType
 	LongPressed    bool
 	Wheel          int
 }
 
-// Alle Callback-Handler fuer die Ereignisse vom Touchscreen, muessen folgendes
-// Profil aufweisen.
-type CallbackType func(evt MouseEvent)
-
-// Alle GUI-Elemente, welche ueber den Touchscreen gesteuert werden sollen,
-// muesssen diesen Datentyp einbetten. Damit werden auch alle unten
-// aufgefuehrten Methoden geerbt und es koennen Handler fuer die diversen
-// Touchscreen-Ereignisse hinterlegt werden. Im Array touchFuncList kann
-// fuer jedes Ereginis max. eine Funktion hinterlegt werden.
-type callbackEmbed struct {
-	callbackList [numEvents]CallbackType
-}
-
-// Diese Methode wird durch AdaGui aufgerufen, um ein Touch-Ereignis an
-// ein GUI-Element zu senden. Es gibt eine Default-Implementation, welche das
-// Event via CallTouchFunc an registrierte Event-Handler sendet.
-// Es ist jedoch ueblich, dass ein GUI-Element diese Methode ueberschreibt
-// um bspw. visuelle Anpassungen zu machen und dann selber CallTouchFunc
-// aufruft.
-func (m *callbackEmbed) OnInputEvent(evt MouseEvent) {
-	if fnc := m.callbackList[evt.Type]; fnc != nil {
-		fnc(evt)
-	}
-}
-
-// Mit SetCallback wird die Funktion fnc als Handler fuer den Event typ
-// registriert. Eine bereits registrierte Funktion wird damit ueberschrieben.
-func (m *callbackEmbed) SetCallback(fnc CallbackType, types ...MouseEventType) {
-	for _, typ := range types {
-		m.callbackList[typ] = fnc
-	}
-}
-
-func (m *callbackEmbed) SetOnMove(fnc CallbackType) {
-	m.SetCallback(fnc, TypeMove)
-}
-
-// Registriert fnc als Handler fuer den Press-Event.
-func (m *callbackEmbed) SetOnPress(fnc CallbackType) {
-	m.SetCallback(fnc, TypePress)
-}
-
-// Registriert fnc als Handler fuer den Release-Event.
-func (m *callbackEmbed) SetOnRelease(fnc CallbackType) {
-	m.SetCallback(fnc, TypeRelease)
-}
-
-// Registriert fnc als Handler fuer den Drag-Event.
-func (m *callbackEmbed) SetOnDrag(fnc CallbackType) {
-	m.SetCallback(fnc, TypeDrag)
-}
-
-// Registriert fnc als Handler fuer den LongPress-Event.
-func (m *callbackEmbed) SetOnLongPress(fnc CallbackType) {
-	m.SetCallback(fnc, TypeLongPress)
-}
-
-// Registriert fnc als Handler fuer den Wheel-Event.
-func (m *callbackEmbed) SetOnWheel(fnc CallbackType) {
-	m.SetCallback(fnc, TypeWheel)
-}
-
-// Registriert fnc als Handler fuer den Enter-Event.
-func (m *callbackEmbed) SetOnEnter(fnc CallbackType) {
-	m.SetCallback(fnc, TypeEnter)
-}
-
-// Registriert fnc als Handler fuer den Leave-Event.
-func (m *callbackEmbed) SetOnLeave(fnc CallbackType) {
-	m.SetCallback(fnc, TypeLeave)
-}
-
-// Registriert fnc als Handler fuer den Click-Event.
-func (m *callbackEmbed) SetOnClick(fnc CallbackType) {
-	m.SetCallback(fnc, TypeClick)
-}
-
-// Registriert fnc als Handler fuer den DoubleClick-Event.
-func (m *callbackEmbed) SetOnDoubleClick(fnc CallbackType) {
-	m.SetCallback(fnc, TypeDoubleClick)
-}

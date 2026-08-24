@@ -2,41 +2,67 @@ package main
 
 import (
 	"flag"
-	"gc9503cv/gc9503cv/geom"
+	"fmt"
 	"log"
+	"os"
+	"os/signal"
 	"time"
 
-	"github.com/stefan-muehlebach/gg/colors"
 	"periph.io/x/host/v3"
+
+	"github.com/stefan-muehlebach/gg/colors"
+	"github.com/stefan-muehlebach/gc9503cv/geom"
 )
 
-//-----------------------------------------------------------------------------
+//----------------------------------------------------------------------------
+
+const (
+	debugFlag = false
+)
+
+//----------------------------------------------------------------------------
 
 var (
-	disp                             *GC9503CV
-	app                              *Application
-	dispBounds, drawBounds, drawRect geom.Rectangle[int]
+	appletList = []string{
+		"Fading color stripes in RGB",
+		"Moving polygons",
+		"Moving circles",
+		"3D Animation of the Platonic Solids",
+		"Geometric patterns using GoColors",
+		"Showing all available fonts",
+		"Shuffle parts of an image randomly",
+	}
 
 	colorList = []colors.RGBA{
 		colors.RGBA{0xff, 0x00, 0x00, 0xff},
-		colors.RGBA{0x00, 0xff, 0x00, 0xff},
-		colors.RGBA{0x00, 0x00, 0xff, 0xff},
 		colors.RGBA{0xff, 0xff, 0x00, 0xff},
+		colors.RGBA{0x00, 0xff, 0x00, 0xff},
 		colors.RGBA{0x00, 0xff, 0xff, 0xff},
+		colors.RGBA{0x00, 0x00, 0xff, 0xff},
 		colors.RGBA{0xff, 0x00, 0xff, 0xff},
 	}
 )
 
+//----------------------------------------------------------------------------
+
 func main() {
+	var disp *GC9503CV
+	var app  *Application
+	var dispBounds, drawBounds, drawRect geom.Rectangle[int]
 	var progIdx int
 	var timeout time.Duration
 	var rotate geom.RotationType
 	var numObjs int
 	var applet Applet
-	//var pointList []Point
+	var appletInfo string
+	var sigChan chan os.Signal
+	
+	for i, txt := range appletList {
+		appletInfo += fmt.Sprintf("\n%d - %s", i, txt)
+	}
 
 	flag.IntVar(&numObjs, "numObjs", 0, "Number of objects.")
-	flag.IntVar(&progIdx, "prog", 0, "Index of program to play.")
+	flag.IntVar(&progIdx, "prog", 0, "Index of program to play." + appletInfo)
 	flag.Var(&rotate, "rotate", "Rotation of the screen")
 	flag.DurationVar(&timeout, "timeout", 10*time.Second,
 		"Duration (for animations)")
@@ -46,43 +72,26 @@ func main() {
 		log.Fatalf("host.Init(): %v", err)
 	}
 
+	sigChan = make(chan os.Signal)
+    signal.Notify(sigChan, os.Interrupt)
+	go func() {
+		<-sigChan
+		app.Stop()
+	}()
+
 	disp = Open(rotate)
 	disp.Init(true)
 	dispBounds = disp.DispBounds()
 	drawBounds = disp.DrawBounds()
 	drawRect = disp.DrawRect()
-	//m := disp.Matrix()
 
-	//log.Printf("display bounds: %v", dispBounds)
-	//log.Printf("drawing bounds: %v", drawBounds)
-	//log.Printf("drawing rect  : %v", drawRect)
+	if debugFlag {
+		log.Printf("display bounds: %v", dispBounds)
+		log.Printf("drawing bounds: %v", drawBounds)
+		log.Printf("drawing rect  : %v", drawRect)
+	}
 
 	app = NewApplication(disp)
-	//log.Printf("app.mainImg: %v", app.mainImg.Bounds())
-	//log.Printf("app.pixBuf : %v", app.pixBuf.Bounds())
-
-/*
-	switch rotate {
-	case geom.Rot000, geom.Rot180:
-		pointList = []Point{
-			{0, 0},
-			{360, 0},
-			{0, 960},
-			{360, 960},
-		}
-	case geom.Rot090, geom.Rot270:
-		pointList = []Point{
-			{0, 0},
-			{960, 0},
-			{0, 360},
-			{960, 360},
-		}
-	}
-*/
-   	//for _, pt := range pointList {
-	//	ptNew := m.Transform(pt)
-	//	log.Printf("%v -> %v", pt, ptNew)
-	//}
 
 	switch progIdx {
 	case 0:
@@ -90,20 +99,35 @@ func main() {
 	case 1:
 		applet = NewPolygonAnimation(drawBounds, numObjs)
 	case 2:
-		applet = NewCircleAnimation(drawBounds, numObjs)
+		applet = NewCircleAnimation(drawBounds, 0)
 	case 3:
 		applet = NewPlatonicAnimation(drawBounds, numObjs)
 	case 4:
 		applet = NewGoColorAnimation(drawBounds)
 	case 5:
 		applet = NewFontsAnimation(drawBounds)
+	case 6:
+		applet = NewShuffleAnimation(drawBounds)
 	default:
 		log.Fatalf("No Applet with index %d found", progIdx)
 	}
 	app.SetApplet(applet)
 
+	time.AfterFunc(timeout, app.Stop)
 	log.Printf("Starting Applet Nr. %d", progIdx)
-	app.Run(timeout)
+	app.Run()
 
-	app.PrintWatchStats()
+    log.Printf("----------------------------------------------------")
+    log.Printf("Timing statistics:")
+	for i := range app.Timer.NumLaps {
+		aver := app.Timer.Avg(i+1)
+		mini := app.Timer.Min(i+1)
+		maxi := app.Timer.Max(i+1)
+		log.Printf("  %5d: %v  (%v..%v)", i+1, aver, mini, maxi)
+	}
+	aver := app.Timer.Avg(0)
+	mini := app.Timer.Min(0)
+	maxi := app.Timer.Max(0)
+	log.Printf("  total: %v  (%v..%v)", aver, mini, maxi)
+    log.Printf("----------------------------------------------------")
 }

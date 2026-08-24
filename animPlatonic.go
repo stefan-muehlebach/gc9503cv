@@ -1,7 +1,7 @@
 package main
 
 import (
-	"gc9503cv/gc9503cv/geom"
+	"github.com/stefan-muehlebach/gc9503cv/geom"
 	"github.com/stefan-muehlebach/gg"
 	"github.com/stefan-muehlebach/gg/colors"
 	"math"
@@ -15,7 +15,7 @@ const (
 )
 
 type PlatonicAnim struct {
-	callbackEmbed
+	eventHandlerEmbed
 	appletEmbed
 	m0                            Matrix
 	objList                       []Object3D

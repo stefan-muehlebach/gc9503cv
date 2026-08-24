@@ -1,7 +1,7 @@
 package main
 
 import (
-	"gc9503cv/gc9503cv/geom"
+	"github.com/stefan-muehlebach/gc9503cv/geom"
 	"github.com/stefan-muehlebach/gg"
 	"github.com/stefan-muehlebach/gg/colors"
 	"math"
@@ -9,7 +9,7 @@ import (
 )
 
 type StripeAnim struct {
-	callbackEmbed
+	eventHandlerEmbed
 	appletEmbed
 	colorList   []colors.RGBA
 	stripeWidth float64

@@ -20,16 +20,20 @@ type PlatonicAnim struct {
 	m0                            Matrix
 	objList                       []Object3D
 	alpha, dAlpha, beta, dBeta    float64
+	upperBound                    float64
 	minZoom, maxZoom, zoom, dZoom float64
 }
 
 func NewPlatonicAnimation(bounds geom.Rectangle[int],
 	numDots int) *PlatonicAnim {
+	var obj *PlatonicSolid
+
 	a := &PlatonicAnim{}
 
 	a.bounds = bounds
 	a.gc = gg.NewContext(a.bounds.Dx(), a.bounds.Dy())
 	rect := a.bounds.Sub(a.bounds.Min).ToFloat()
+	drawStyle := 0
 
 	if numDots <= 0 {
 		numDots = defNumDots
@@ -37,55 +41,51 @@ func NewPlatonicAnimation(bounds geom.Rectangle[int],
 
 	mp := rect.Center()
 	zero := NewVector(0.0, 0.0, 0.0)
-	ex := NewVector(100.0, 0.0, 0.0)
+	//ex := NewVector(100.0, 0.0, 0.0)
 	ey := NewVector(0.0, 100.0, 0.0)
-	ez := NewVector(0.0, 0.0, 100.0)
+	//ez := NewVector(0.0, 0.0, 100.0)
 
 	a.objList = make([]Object3D, 0)
-	a.objList = append(a.objList, NewSegment(zero, ex, colors.Red, 4.0))
-	a.objList = append(a.objList, NewSegment(zero, ey, colors.Green, 4.0))
-	a.objList = append(a.objList, NewSegment(zero, ez, colors.Blue, 4.0))
+	//a.objList = append(a.objList, NewSegment(zero, ex, colors.Red, 4.0))
+	//a.objList = append(a.objList, NewSegment(zero, ey, colors.Green, 4.0))
+	//a.objList = append(a.objList, NewSegment(zero, ez, colors.Blue, 4.0))
 
-	obj := NewPlatonicSolid(TetraederPoints, TetraederFaces, ey.Neg().Mul(4),
-		100.0, colors.Plum, 3.0)
+	obj = NewPlatonicSolid(Tetraeder, ey.Neg().Mul(5.1), 100.0,
+		colors.GoGopherBlue, 3.0)
+	obj.DrawStyle = drawStyle
 	a.objList = append(a.objList, obj)
-	for _, f := range obj.FaceList() {
-		a.objList = append(a.objList, f)
-	}
-	obj = NewPlatonicSolid(HexaederPoints, HexaederFaces, ey.Neg().Mul(2),
-		100.0, colors.PaleTurquoise, 3.0)
-	a.objList = append(a.objList, obj)
-	for _, f := range obj.FaceList() {
-		a.objList = append(a.objList, f)
-	}
-	obj = NewPlatonicSolid(OktaederPoints, OktaederFaces, zero,
-		100.0, colors.LightSalmon, 3.0)
-	a.objList = append(a.objList, obj)
-	for _, f := range obj.FaceList() {
-		a.objList = append(a.objList, f)
-	}
-	obj = NewPlatonicSolid(IkosaederPoints, IkosaederFaces, ey.Mul(2),
-		100.0, colors.PaleGreen, 3.0)
-	a.objList = append(a.objList, obj)
-	for _, f := range obj.FaceList() {
-		a.objList = append(a.objList, f)
-	}
-	obj = NewPlatonicSolid(DodekaederPoints, DodekaederFaces, ey.Mul(4),
-		100.0, colors.Khaki, 3.0)
-	a.objList = append(a.objList, obj)
-	for _, f := range obj.FaceList() {
-		a.objList = append(a.objList, f)
-	}
 
-	/*
-		obj := NewPlatonicSolid(SwissPoints, SwissFaces, zero,
-			300.0, colors.LightPink, 3.0)
-		obj.SetHoles(SwissHoles)
-		a.objList = append(a.objList, obj)
-		for _, f := range obj.FaceList() {
-			a.objList = append(a.objList, f)
-		}
-	*/
+	//for _, f := range obj.FaceList() {
+	//	a.objList = append(a.objList, f)
+	//}
+
+	obj = NewPlatonicSolid(Hexaeder, ey.Neg().Mul(3.4), 100.0,
+		colors.GoYellow, 3.0)
+	obj.DrawStyle = drawStyle
+	a.objList = append(a.objList, obj)
+
+	obj = NewPlatonicSolid(Oktaeder, ey.Neg().Mul(1.7),
+		100.0, colors.GoAqua, 3.0)
+	obj.DrawStyle = drawStyle
+	a.objList = append(a.objList, obj)
+
+	obj = NewPlatonicSolid(Ikosaeder, ey.Mul(2.0), 100.0,
+		colors.GoFuchsia, 3.0)
+	obj.DrawStyle = drawStyle
+	a.objList = append(a.objList, obj)
+
+	obj = NewPlatonicSolid(Dodekaeder, ey.Mul(4.0), 100.0,
+		colors.GoLightBlue, 3.0)
+	obj.DrawStyle = drawStyle
+	a.objList = append(a.objList, obj)
+
+	//obj = NewPlatonicSolid(Flag, zero, 100.0, colors.GoFuchsia, 3.0)
+	//a.objList = append(a.objList, obj)
+
+	obj = NewPlatonicSolid(Cross, zero, 100.0, colors.GoWhite, 3.0)
+	obj.DrawStyle = drawStyle
+	a.objList = append(a.objList, obj)
+
 	//a.objList = append(a.objList, NewCloud(0.0, 100.0, 0.0, 50.0,
 	//	numDots, colors.YellowGreen, 4.0)...)
 
@@ -93,8 +93,9 @@ func NewPlatonicAnimation(bounds geom.Rectangle[int],
 		Mul(Scale(NewVector(1.0, -1.0, 1.0))).
 		Mul(Translate(NewVector(mp.X, -mp.Y, 0.0)))
 
-	a.dAlpha = math.Pi / 162.0
-	a.dBeta = math.Pi / 106.0
+	a.dAlpha = math.Pi / 250.0
+	a.dBeta = math.Pi / 180.0
+	a.upperBound = math.Pi / 2.0
 
 	a.minZoom = 0.4
 	a.maxZoom = 1.5
@@ -118,13 +119,28 @@ func (a *PlatonicAnim) Update(dt time.Duration) {
 		obj.Transform(m)
 	}
 	a.alpha += a.dAlpha
-	if a.alpha > 2*math.Pi {
+	if a.alpha >= 2*math.Pi {
 		a.alpha -= 2 * math.Pi
 	}
 	a.beta += a.dBeta
-	if a.beta > 2*math.Pi {
+	if a.beta >= 2*math.Pi {
 		a.beta -= 2 * math.Pi
 	}
+	/*
+		a.alpha += a.dAlpha
+		if a.alpha >= a.upperBound {
+			a.alpha = a.upperBound
+			a.dAlpha = 0.0
+			a.dBeta = math.Pi / 210.0
+		}
+		a.beta += a.dBeta
+		if a.beta >= a.upperBound {
+			a.beta = a.upperBound
+			a.dBeta = 0.0
+			a.dAlpha = math.Pi / 200.0
+			a.upperBound += math.Pi / 2.0
+		}
+	*/
 	//a.zoom += a.dZoom
 	//if (a.zoom < a.minZoom) || (a.zoom > a.maxZoom) {
 	//	a.dZoom = -a.dZoom
@@ -146,8 +162,6 @@ func (a *PlatonicAnim) Refresh() {
 	for _, obj := range a.objList {
 		obj.Draw(a.gc)
 	}
-	//draw.Draw(img, a.bounds.ToInt(), a.gc.Image().(*image.RGBA),
-	//	image.Point{}, draw.Over)
 }
 
 //----------------------------------------------------------------------------
@@ -160,47 +174,70 @@ type Object3D interface {
 
 //----------------------------------------------------------------------------
 
+type ObjectData struct {
+	Points []Vector
+	Edges  [][]int
+	Faces  [][]int
+	Holes  [][]int
+}
+
 var (
+	// The golden ratio
+	phi = (math.Sqrt(5) + 1) / 2
+
 	// Groessen, Punkte und Flaechendefinitionen fuer....
 	// Tetraeder
 	f0 = math.Sqrt(3.0 / 8.0)
 	a0 = (1.0 / f0) * (1.0 / 2.0)
 	b0 = (1.0 / f0) * (math.Sqrt(2.0) / 4.0)
 
-	TetraederPoints = []Vector{
-		Vector{a0, 0, -b0},
-		Vector{-a0, 0, -b0},
-		Vector{0, a0, b0},
-		Vector{0, -a0, b0},
-	}
-	TetraederFaces = [][]int{
-		{0, 1, 2},
-		{0, 3, 1},
-		{0, 2, 3},
-		{1, 3, 2},
+	Tetraeder = ObjectData{
+		Points: []Vector{
+			Vector{a0, 0, -b0},
+			Vector{-a0, 0, -b0},
+			Vector{0, a0, b0},
+			Vector{0, -a0, b0},
+		},
+		Edges: [][]int{
+			{0, 1, 2, 3},
+			{2, 0, 3, 1},
+		},
+		Faces: [][]int{
+			{0, 1, 2},
+			{0, 3, 1},
+			{0, 2, 3},
+			{1, 3, 2},
+		},
 	}
 
-	// Hexaeder
+	// Hexaeder (oder einfach Wuerfel, gell...)
 	f1 = math.Sqrt(3.0) / 2.0
 	a1 = (1.0 / f1) * (1.0 / 2.0)
 
-	HexaederPoints = []Vector{
-		Vector{-a1, -a1, -a1},
-		Vector{-a1, a1, -a1},
-		Vector{a1, a1, -a1},
-		Vector{a1, -a1, -a1},
-		Vector{-a1, -a1, a1},
-		Vector{-a1, a1, a1},
-		Vector{a1, a1, a1},
-		Vector{a1, -a1, a1},
-	}
-	HexaederFaces = [][]int{
-		{0, 1, 2, 3},
-		{0, 4, 5, 1},
-		{1, 5, 6, 2},
-		{2, 6, 7, 3},
-		{3, 7, 4, 0},
-		{4, 7, 6, 5},
+	Hexaeder = ObjectData{
+		Points: []Vector{
+			Vector{-a1, -a1, -a1},
+			Vector{-a1, a1, -a1},
+			Vector{a1, a1, -a1},
+			Vector{a1, -a1, -a1},
+			Vector{-a1, -a1, a1},
+			Vector{-a1, a1, a1},
+			Vector{a1, a1, a1},
+			Vector{a1, -a1, a1},
+		},
+		Edges: [][]int{
+			{0, 1, 2, 3, 0},
+			{4, 5, 6, 7, 4},
+			{0, 4}, {1, 5}, {2, 6}, {3, 7},
+		},
+		Faces: [][]int{
+			{0, 1, 2, 3},
+			{0, 4, 5, 1},
+			{1, 5, 6, 2},
+			{2, 6, 7, 3},
+			{3, 7, 4, 0},
+			{4, 7, 6, 5},
+		},
 	}
 
 	// Oktaeder
@@ -208,72 +245,84 @@ var (
 	a2 = (1.0 / f2) * (1.0 / 2.0)
 	e2 = (1.0 / f2) * (math.Sqrt(2.0) / 2.0)
 
-	OktaederPoints = []Vector{
-		Vector{0, 0, -e2},
-		Vector{a2, -a2, 0},
-		Vector{a2, a2, 0},
-		Vector{-a2, a2, 0},
-		Vector{-a2, -a2, 0},
-		Vector{0, 0, e2},
-	}
-	OktaederFaces = [][]int{
-		{0, 2, 1},
-		{0, 3, 2},
-		{0, 4, 3},
-		{0, 1, 4},
-		{1, 2, 5},
-		{2, 3, 5},
-		{3, 4, 5},
-		{4, 1, 5},
+	Oktaeder = ObjectData{
+		Points: []Vector{
+			Vector{0, 0, -e2},
+			Vector{a2, -a2, 0},
+			Vector{a2, a2, 0},
+			Vector{-a2, a2, 0},
+			Vector{-a2, -a2, 0},
+			Vector{0, 0, e2},
+		},
+		Edges: [][]int{
+			{0, 1}, {0, 2}, {0, 3}, {0, 4},
+			{1, 2}, {2, 3}, {3, 4}, {4, 1},
+			{5, 1}, {5, 2}, {5, 3}, {5, 4},
+		},
+		Faces: [][]int{
+			{0, 2, 1},
+			{0, 3, 2},
+			{0, 4, 3},
+			{0, 1, 4},
+			{1, 2, 5},
+			{2, 3, 5},
+			{3, 4, 5},
+			{4, 1, 5},
+		},
 	}
 
 	// Ikosaeder
-	phi = (math.Sqrt(5) + 1) / 2
-	d   = 1.0 / phi
-	c   = 1.0
-
 	f3 = 0.25 * math.Sqrt(10.0+2.0*math.Sqrt(5.0))
 	a3 = (1.0 / f3) * (1.0 / 2.0)
 	c3 = (1.0 / f3) * (1.0 + math.Sqrt(5.0)) / 4.0
 
-	IkosaederPoints = []Vector{
-		Vector{0.0, -a3, -c3},
-		Vector{0.0, a3, -c3},
-		Vector{-c3, 0.0, -a3},
-		Vector{c3, 0.0, -a3},
+	Ikosaeder = ObjectData{
+		Points: []Vector{
+			Vector{0.0, -a3, -c3},	// 0
+			Vector{0.0, a3, -c3},   // 1
+			Vector{-c3, 0.0, -a3},	// 2
+			Vector{c3, 0.0, -a3},	// 3
 
-		Vector{-a3, -c3, 0.0},
-		Vector{a3, -c3, 0.0},
-		Vector{a3, c3, 0.0},
-		Vector{-a3, c3, 0.0},
+			Vector{-a3, -c3, 0.0},	// 4
+			Vector{a3, -c3, 0.0},	// 5
+			Vector{a3, c3, 0.0},	// 6
+			Vector{-a3, c3, 0.0},	// 7
 
-		Vector{-c3, 0.0, a3},
-		Vector{c3, 0.0, a3},
-		Vector{0.0, -a3, c3},
-		Vector{0.0, a3, c3},
-	}
-
-	IkosaederFaces = [][]int{
-		{0, 1, 3},
-		{0, 3, 5},
-		{0, 5, 4},
-		{0, 4, 2},
-		{0, 2, 1},
-		{1, 2, 7},
-		{2, 8, 7},
-		{2, 4, 8},
-		{4, 10, 8},
-		{4, 5, 10},
-		{5, 9, 10},
-		{5, 3, 9},
-		{3, 6, 9},
-		{3, 1, 6},
-		{1, 7, 6},
-		{8, 10, 11},
-		{10, 9, 11},
-		{9, 6, 11},
-		{6, 7, 11},
-		{7, 8, 11},
+			Vector{-c3, 0.0, a3},	// 8
+			Vector{c3, 0.0, a3},	// 9
+			Vector{0.0, -a3, c3},	// 10
+			Vector{0.0, a3, c3},	// 11
+		},
+		Edges: [][]int{
+			{0, 1, 2, 0, 3, 1},
+			{10, 11, 9, 10, 8, 11},
+			{4, 5, 0, 4, 10, 5},
+			{6, 7, 1, 6, 11, 7},
+			{9, 3, 6, 9, 5, 3},
+			{8, 2, 7, 8, 4, 2},
+		},
+		Faces: [][]int{
+			{0, 1, 3},
+			{0, 3, 5},
+			{0, 5, 4},
+			{0, 4, 2},
+			{0, 2, 1},
+			{1, 2, 7},
+			{2, 8, 7},
+			{2, 4, 8},
+			{4, 10, 8},
+			{4, 5, 10},
+			{5, 9, 10},
+			{5, 3, 9},
+			{3, 6, 9},
+			{3, 1, 6},
+			{1, 7, 6},
+			{8, 10, 11},
+			{10, 9, 11},
+			{9, 6, 11},
+			{6, 7, 11},
+			{7, 8, 11},
+		},
 	}
 
 	// Dodekaeder
@@ -282,115 +331,198 @@ var (
 	b4 = (1.0 / f4) * (1.0 + phi) / 2.0
 	c4 = (1.0 / f4) * phi / 2.0
 
-	DodekaederPoints = []Vector{
-		Vector{a4, 0, -b4},
-		Vector{-a4, 0, -b4},
-		Vector{c4, c4, -c4},
-		Vector{-c4, c4, -c4},
-		Vector{-c4, -c4, -c4},
-		Vector{c4, -c4, -c4},
-		Vector{0, b4, -a4},
-		Vector{0, -b4, -a4},
-		Vector{b4, -a4, 0},
-		Vector{b4, a4, 0},
-		Vector{-b4, a4, 0},
-		Vector{-b4, -a4, 0},
-		Vector{0, b4, a4},
-		Vector{0, -b4, a4},
-		Vector{c4, c4, c4},
-		Vector{-c4, c4, c4},
-		Vector{-c4, -c4, c4},
-		Vector{c4, -c4, c4},
-		Vector{a4, 0, b4},
-		Vector{-a4, 0, b4},
-	}
-	DodekaederFaces = [][]int{
-		{0, 2, 9, 8, 5},
-		{1, 4, 11, 10, 3},
-		{0, 1, 3, 6, 2},
-		{0, 5, 7, 4, 1},
-		{2, 6, 12, 14, 9},
-		{3, 10, 15, 12, 6},
-		{5, 8, 17, 13, 7},
-		{4, 7, 13, 16, 11},
-		{8, 9, 14, 18, 17},
-		{10, 11, 16, 19, 15},
-		{12, 15, 19, 18, 14},
-		{13, 17, 18, 19, 16},
+	Dodekaeder = ObjectData{
+		Points: []Vector{
+			Vector{a4, 0, -b4},		// 0
+			Vector{-a4, 0, -b4},	// 1
+			Vector{c4, c4, -c4},	// 2
+			Vector{-c4, c4, -c4},	// 3
+			Vector{-c4, -c4, -c4},	// 4
+			Vector{c4, -c4, -c4},	// 5
+			Vector{0, b4, -a4},		// 6
+			Vector{0, -b4, -a4},	// 7
+			Vector{b4, -a4, 0},		// 8
+			Vector{b4, a4, 0},		// 9
+			Vector{-b4, a4, 0},
+			Vector{-b4, -a4, 0},
+			Vector{0, b4, a4},		// 12
+			Vector{0, -b4, a4},
+			Vector{c4, c4, c4},
+			Vector{-c4, c4, c4},
+			Vector{-c4, -c4, c4},	// 16
+			Vector{c4, -c4, c4},
+			Vector{a4, 0, b4},
+			Vector{-a4, 0, b4},		// 19
+		},
+		Edges: [][]int{
+			{0, 1, 4, 7, 5, 0, 2, 6, 3, 1},
+			{18, 19, 16, 13, 17, 18, 14, 12, 15, 19},
+			{5, 8, 17}, {2, 9, 14}, {3, 10, 15}, {4, 11, 16},
+			{7, 13}, {6, 12}, {8, 9}, {10, 11},
+		},
+		Faces: [][]int{
+			{0, 2, 9, 8, 5},
+			{1, 4, 11, 10, 3},
+			{0, 1, 3, 6, 2},
+			{0, 5, 7, 4, 1},
+			{2, 6, 12, 14, 9},
+			{3, 10, 15, 12, 6},
+			{5, 8, 17, 13, 7},
+			{4, 7, 13, 16, 11},
+			{8, 9, 14, 18, 17},
+			{10, 11, 16, 19, 15},
+			{12, 15, 19, 18, 14},
+			{13, 17, 18, 19, 16},
+		},
 	}
 
-	// Schweizerkreuz-Box (wird noch nicht korrekt gezeichnet, da
-	f5 = 1.0 / 32.0
+	// Schweizerkreuz-Box
+	f5 = 1.0 / 16.0
 	a5 = f5 * 16.0
 	b5 = f5 * 10.0
 	c5 = f5 * 3.0
-	d5 = f5 * 5.0
+	d5 = f5 * 3.0
 
-	SwissPoints = []Vector{
-		// Front and Back
-		Vector{a5, a5, -d5},
-		Vector{-a5, a5, -d5},
-		Vector{-a5, -a5, -d5},
-		Vector{a5, -a5, -d5},
+	Cross = ObjectData{
+		Points: []Vector{
+			Vector{-b5, -c5, -d5},	// 0
+			Vector{-b5, c5, -d5},	// 1
+			Vector{-c5, c5, -d5},	// 2
+			Vector{-c5, b5, -d5},	// 3
+			Vector{c5, b5, -d5},	// 4
+			Vector{c5, c5, -d5},	// 5
+			Vector{b5, c5, -d5},	// 6
+			Vector{b5, -c5, -d5},	// 7
+			Vector{c5, -c5, -d5},	// 8
+			Vector{c5, -b5, -d5},	// 9
+			Vector{-c5, -b5, -d5},	// 10
+			Vector{-c5, -c5, -d5},	// 11
 
-		// Sides
-		Vector{a5, a5, d5},
-		Vector{-a5, a5, d5},
-		Vector{-a5, -a5, d5},
-		Vector{a5, -a5, d5},
+			Vector{-b5, -c5, d5},	// 12
+			Vector{-b5, c5, d5},	// 13
+			Vector{-c5, c5, d5},	// 14
+			Vector{-c5, b5, d5},	// 15
+			Vector{c5, b5, d5},		// 16
+			Vector{c5, c5, d5},		// 17
+			Vector{b5, c5, d5},		// 18
+			Vector{b5, -c5, d5},	// 19
+			Vector{c5, -c5, d5},	// 20
+			Vector{c5, -b5, d5},	// 21
+			Vector{-c5, -b5, d5},	// 22
+			Vector{-c5, -c5, d5},	// 23
 
-		Vector{-b5, -c5, -d5},
-		Vector{-b5, c5, -d5},
-		Vector{-c5, c5, -d5},
-		Vector{-c5, b5, -d5},
-		Vector{c5, b5, -d5},
-		Vector{c5, c5, -d5},
-		Vector{b5, c5, -d5},
-		Vector{b5, -c5, -d5},
-		Vector{c5, -c5, -d5},
-		Vector{c5, -b5, -d5},
-		Vector{-c5, -b5, -d5},
-		Vector{-c5, -c5, -d5},
+			Vector{-c5, c5, -b5},	// 24
+			Vector{c5, c5, -b5},	// 25
+			Vector{c5, -c5, -b5},	// 26
+			Vector{-c5, -c5, -b5},	// 27
 
-		Vector{-b5, -c5, d5},
-		Vector{-b5, c5, d5},
-		Vector{-c5, c5, d5},
-		Vector{-c5, b5, d5},
-		Vector{c5, b5, d5},
-		Vector{c5, c5, d5},
-		Vector{b5, c5, d5},
-		Vector{b5, -c5, d5},
-		Vector{c5, -c5, d5},
-		Vector{c5, -b5, d5},
-		Vector{-c5, -b5, d5},
-		Vector{-c5, -c5, d5},
+			Vector{-c5, c5, b5},	// 28
+			Vector{c5, c5, b5},		// 29
+			Vector{c5, -c5, b5},	// 30
+			Vector{-c5, -c5, b5},	// 31
+		},
+		Edges: [][]int{
+			// Entlang X-Achse
+			{0, 1, 6, 7, 0}, {12, 13, 18, 19, 12}, {0, 12}, {1, 13}, {6, 18},
+				{7, 19},
+			// Entlang Y-Achse
+			{3, 4, 9, 10, 3}, {15, 16, 21, 22, 15}, {3, 15}, {4, 16}, {9, 21},
+				{10, 22},
+			// Entlang Z-Achse
+			{24, 25, 29, 28, 24}, {26, 27, 31, 30, 26}, {25, 26}, {24, 27},
+				{29, 30}, {28, 31},
+		},
+		Faces: [][]int{
+			// Untere Kreuzflaeche
+			{0, 1, 2, 11}, {2, 3, 4, 5}, {5, 6, 7, 8}, {8, 9, 10, 11},
+			// Obere Kreuzflaeche
+			{12, 23, 14, 13}, {14, 17, 16, 15}, {17, 20, 19, 18},
+				 {20, 23, 22, 21},
+			// Seitliche Begrenzungsflaechen
+			{1, 0, 12, 13}, {2, 1, 13, 14}, {3, 2, 14, 15}, {4, 3, 15, 16},
+				{5, 4, 16, 17}, {6, 5, 17, 18}, {7, 6, 18, 19}, {8, 7, 19, 20},
+				{9, 8, 20, 21}, {10, 9, 21, 22}, {11, 10, 22, 23},
+				{0, 11, 23, 12},
+			// Unterer Turm
+			{2, 24, 27, 11}, {2, 5, 25, 24}, {5, 8, 26, 25}, {8, 11, 27, 26},
+				{24, 25, 26, 27},
+			// Oberer Turn
+			{14, 23, 31, 28}, {17, 14, 28, 29}, {20, 17, 29, 30},
+				{23, 20, 30, 31}, {28, 31, 30, 29},
+		},
 	}
-	SwissFaces = [][]int{
-		{3, 2, 1, 0},
-		{4, 5, 6, 7},
 
-		{0, 1, 5, 4},
-		{1, 2, 6, 5},
-		{2, 3, 7, 6},
-		{3, 0, 4, 7},
+	Flag = ObjectData{
+		Points: []Vector{
+			Vector{a5, a5, -d5},
+			Vector{-a5, a5, -d5},
+			Vector{-a5, -a5, -d5},
+			Vector{a5, -a5, -d5},
 
-		// Coords of the
-		{8, 9, 21, 20},
-		{9, 10, 22, 21},
-		{10, 11, 23, 22},
-		{11, 12, 24, 23},
-		{12, 13, 25, 24},
-		{13, 14, 26, 25},
-		{14, 15, 27, 26},
-		{15, 16, 28, 27},
-		{16, 17, 29, 28},
-		{17, 18, 30, 29},
-		{18, 19, 31, 30},
-		{19, 8, 20, 31},
-	}
-	SwissHoles = [][]int{
-		{19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8},
-		{20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31},
+			Vector{a5, a5, d5},
+			Vector{-a5, a5, d5},
+			Vector{-a5, -a5, d5},
+			Vector{a5, -a5, d5},
+
+			Vector{-b5, -c5, -d5},
+			Vector{-b5, c5, -d5},
+			Vector{-c5, c5, -d5},
+			Vector{-c5, b5, -d5},
+			Vector{c5, b5, -d5},
+			Vector{c5, c5, -d5},
+			Vector{b5, c5, -d5},
+			Vector{b5, -c5, -d5},
+			Vector{c5, -c5, -d5},
+			Vector{c5, -b5, -d5},
+			Vector{-c5, -b5, -d5},
+			Vector{-c5, -c5, -d5},
+
+			Vector{-b5, -c5, d5},
+			Vector{-b5, c5, d5},
+			Vector{-c5, c5, d5},
+			Vector{-c5, b5, d5},
+			Vector{c5, b5, d5},
+			Vector{c5, c5, d5},
+			Vector{b5, c5, d5},
+			Vector{b5, -c5, d5},
+			Vector{c5, -c5, d5},
+			Vector{c5, -b5, d5},
+			Vector{-c5, -b5, d5},
+			Vector{-c5, -c5, d5},
+		},
+		Edges: [][]int{
+			{0, 1, 2, 3, 0},
+			{4, 5, 6, 7, 4},
+			{0, 4}, {1, 5}, {2, 6}, {3, 7},
+		},
+		Faces: [][]int{
+			// Vorder- und Rueckseite
+			{3, 2, 1, 0},
+			{4, 5, 6, 7},
+			// Umlaufende Seitenflaechen
+			{0, 1, 5, 4},
+			{1, 2, 6, 5},
+			{2, 3, 7, 6},
+			{3, 0, 4, 7},
+			// Begrenzungsflaechen zum kreuzfoermigen Loch
+			{8, 9, 21, 20},
+			{9, 10, 22, 21},
+			{10, 11, 23, 22},
+			{11, 12, 24, 23},
+			{12, 13, 25, 24},
+			{13, 14, 26, 25},
+			{14, 15, 27, 26},
+			{15, 16, 28, 27},
+			{16, 17, 29, 28},
+			{17, 18, 30, 29},
+			{18, 19, 31, 30},
+			{19, 8, 20, 31},
+		},
+		Holes: [][]int{
+			// Kreuzfoermige Ausschnitte in Vorder- und Rueckseite
+			{19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8},
+			{20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31},
+		},
 	}
 )
 
@@ -399,42 +531,41 @@ var (
 type PlatonicSolid struct {
 	Pts, PtsT  []Vector
 	Faces      []*Face
+	Edges      [][]int
 	ZMin, ZMax float64
 	LineWidth  float64
 	LineColor  colors.RGBA
 	FillColor  colors.RGBA
+	DrawStyle  int // 0: filled faces, 1: wireframe, 2: cornerdots
 }
 
-func NewPlatonicSolid(points []Vector, faces [][]int, pos Vector,
+func NewPlatonicSolid(data ObjectData, pos Vector,
 	size float64, color colors.RGBA, lineWidth float64) *PlatonicSolid {
 	o := &PlatonicSolid{}
 	o.LineWidth = lineWidth
 	o.LineColor = color
 	o.FillColor = color.Dark(0.1)
-	o.Pts = make([]Vector, len(points))
-	o.PtsT = make([]Vector, len(points))
-	o.Faces = make([]*Face, len(faces))
+	o.Pts = make([]Vector, len(data.Points))
+	o.PtsT = make([]Vector, len(data.Points))
+	o.Edges = make([][]int, len(data.Edges))
+	o.Faces = make([]*Face, len(data.Faces))
 
 	m0 := Scale(Vector{size, size, size})
 	m1 := Translate(pos)
 	m := m1.Mul(m0)
-	for i, pt := range points {
+	for i, pt := range data.Points {
 		o.Pts[i] = m.Transform(pt)
 	}
-	for i, face := range faces {
+	for i, edge := range data.Edges {
+		o.Edges[i] = edge
+	}
+	for i, face := range data.Faces {
 		o.Faces[i] = NewFace(o, face, color, lineWidth)
 	}
-	return o
-}
-
-func (o *PlatonicSolid) SetHoles(idx [][]int) {
-	for i, holes := range idx {
+	for i, holes := range data.Holes {
 		o.Faces[i].Hole = holes
 	}
-}
-
-func (o *PlatonicSolid) FaceList() []*Face {
-	return o.Faces
+	return o
 }
 
 func (o *PlatonicSolid) Transform(m Matrix) {
@@ -450,6 +581,9 @@ func (o *PlatonicSolid) Transform(m Matrix) {
 		}
 		o.PtsT[i] = ptT
 	}
+	for _, face := range o.Faces {
+		face.Transform(m)
+	}
 }
 
 func (o *PlatonicSolid) Z() float64 {
@@ -457,7 +591,39 @@ func (o *PlatonicSolid) Z() float64 {
 }
 
 func (o *PlatonicSolid) Draw(gc *gg.Context) {
-	return
+	switch o.DrawStyle {
+	case 0:
+		slices.SortFunc(o.Faces, func(a, b *Face) int {
+			if a.Z() < b.Z() {
+				return -1
+			} else if a.Z() > b.Z() {
+				return +1
+			} else {
+				return 0
+			}
+		})
+		for _, face := range o.Faces {
+			face.Draw(gc)
+		}
+	case 1:
+		gc.SetLineWidth(o.LineWidth)
+		gc.SetLineColor(o.LineColor)
+		for _, edge := range o.Edges {
+			pt := o.PtsT[edge[0]]
+			gc.MoveTo(pt.X, pt.Y)
+			for _, idx := range edge[1:] {
+				pt := o.PtsT[idx]
+				gc.LineTo(pt.X, pt.Y)
+			}
+			gc.Stroke()
+		}
+	case 2:
+		gc.SetFillColor(o.LineColor)
+		for _, pt := range o.PtsT {
+			gc.DrawPoint(pt.X, pt.Y, 2.0)
+			gc.Fill()
+		}
+	}
 }
 
 //-----------------------------------------------------------------------
@@ -512,6 +678,9 @@ func (f *Face) Z() float64 {
 
 func (f *Face) Draw(gc *gg.Context) {
 	if f.NormT.Z < 0 {
+		return
+	}
+	if f.o.DrawStyle != 0 {
 		return
 	}
 	gc.SetLineWidth(f.LineWidth)

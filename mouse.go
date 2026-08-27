@@ -138,7 +138,7 @@ type Mouse struct {
 }
 
 var (
-	devFile = "/dev/input/event0"
+	devFile = "/dev/input/event4"
 )
 
 // Funktionen

@@ -14,53 +14,28 @@ import (
 
 //-----------------------------------------------------------------------------
 
-type Applet interface {
-	Bounds() image.Rectangle
-	Image() *image.RGBA
-	Init()
-	Update(dt time.Duration)
-	Refresh()
-	OnInputEvent(ev MouseEvent)
-}
-
-//-----------------------------------------------------------------------------
-
-type appletEmbed struct {
-	gc     *gg.Context
-	bounds geom.Rectangle[int]
-	Root   Container
-}
-
-func (a *appletEmbed) Bounds() image.Rectangle {
-	return a.bounds.ToInt()
-}
-
-func (a *appletEmbed) Image() *image.RGBA {
-	return a.gc.Image().(*image.RGBA)
-}
-
-//-----------------------------------------------------------------------------
-
 type Node interface {
+	EventHandler
 	Wrappee() *nodeEmbed
 	Bounds() Rectangle
 	Pos() Point
+	Move(pos Point)
+	MinSize() Point
 	Size() Point
-	SetPos(pos Point)
-	SetSize(size Point)
+	Resize(size Point)
 	Contains(pt Point) Node
-	OnInputEvent(ev MouseEvent)
 	Update(dt time.Duration)
 	Draw(gc *gg.Context)
+	OnInputEvent(ev MouseEvent)
 }
 
 //-----------------------------------------------------------------------------
 
 type nodeEmbed struct {
 	eventHandlerEmbed
-	wrapper Node
-	parent Container
-	pos, size Point
+	wrapper            Node
+	parent             Container
+	pos, size, minSize Point
 }
 
 func (n *nodeEmbed) Init(node Node) {
@@ -79,18 +54,22 @@ func (n *nodeEmbed) Pos() Point {
 	return n.pos
 }
 
+func (n *nodeEmbed) Move(pos Point) {
+	n.pos = pos
+}
+
+func (n *nodeEmbed) MinSize() Point {
+	return n.minSize
+}
+
 func (n *nodeEmbed) Size() Point {
 	return n.size
 }
 
-func (n *nodeEmbed) SetPos(pos Point) {
-	n.pos = pos
-}
-	
-func (n *nodeEmbed) SetSize(size Point) {
+func (n *nodeEmbed) Resize(size Point) {
 	n.size = size
 }
-	
+
 func (n *nodeEmbed) Contains(pt Point) Node {
 	if pt.In(n.Bounds()) {
 		return n.wrapper
@@ -135,25 +114,19 @@ func (c *containerEmbed) Add(nl ...Node) {
 }
 
 func (c *containerEmbed) Del(n Node) {
-    for e := c.childList.Front(); e != nil; e = e.Next() {
-        if e.Value.(Node) == n {
-        	c.childList.Remove(e)
-        	break
+	for e := c.childList.Front(); e != nil; e = e.Next() {
+		if e.Value.(Node) == n {
+			c.childList.Remove(e)
+			break
 		}
-    }
-}
-
-func (c *containerEmbed) Update(dt time.Duration) {
-    for e := c.childList.Front(); e != nil; e = e.Next() {
-        e.Value.(Node).Update(dt)
-    }
+	}
 }
 
 func (c *containerEmbed) Contains(pt Point) Node {
 	if n := c.nodeEmbed.Contains(pt); n == nil {
 		return nil
 	}
-    for e := c.childList.Back(); e != nil; e = e.Prev() {
+	for e := c.childList.Back(); e != nil; e = e.Prev() {
 		if n := e.Value.(Node).Contains(pt); n != nil {
 			return n
 		}
@@ -161,16 +134,16 @@ func (c *containerEmbed) Contains(pt Point) Node {
 	return c
 }
 
+func (c *containerEmbed) Update(dt time.Duration) {
+	for e := c.childList.Front(); e != nil; e = e.Next() {
+		e.Value.(Node).Update(dt)
+	}
+}
+
 func (c *containerEmbed) Draw(gc *gg.Context) {
-	//b := c.Bounds()
-	//gc.DrawRectangle(b.Min.X, b.Min.Y, b.Dx(), b.Dy())
-	//gc.Clip()
-    for e := c.childList.Front(); e != nil; e = e.Next() {
-        if n, ok := e.Value.(Node); ok {
-        	n.Draw(gc)
-		}
-    }
-	//gc.ResetClip()
+	for e := c.childList.Front(); e != nil; e = e.Next() {
+		e.Value.(Node).Draw(gc)
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -185,24 +158,36 @@ func NewGroup() *Group {
 	return g
 }
 
+/*
+func (g *Group) Add(nl ...Node) {
+	rect := g.Bounds()
+	for _, n := range nl {
+		rect = rect.Union(n.Bounds())
+	}
+	g.pos = rect.Min
+	g.size = rect.Size()
+	g.containerEmbed.Add(nl...)
+}
+*/
+
 //-----------------------------------------------------------------------------
 
 type Application struct {
-	disp                                       *GC9503CV
-	applet                                     Applet
-	Timer                                      *Stopwatch
-	mainImg                                    *image.RGBA
-	pixBuf                                     *iliimg.ILIImage
-	mouse                                      *Mouse
-	isRunning                                  bool
-	wg                      				   sync.WaitGroup
+	disp      *GC9503CV
+	win       Window
+	Timer     *Stopwatch
+	mainImg   *image.RGBA
+	pixBuf    *iliimg.ILIImage
+	mouse     *Mouse
+	isRunning bool
+	wg        sync.WaitGroup
 }
 
 func NewApplication(disp *GC9503CV) *Application {
 	a := &Application{}
 
 	a.disp = disp
-	a.Timer = NewStopwatch("New Tiner")
+	a.Timer = NewStopwatch("New Timer")
 	a.mainImg = image.NewRGBA(disp.DrawBounds().ToInt())
 	a.pixBuf = iliimg.NewILIImage(disp.DispBounds().ToInt())
 	a.pixBuf.SetLSBFirst()
@@ -214,14 +199,20 @@ func NewApplication(disp *GC9503CV) *Application {
 	return a
 }
 
-func (a *Application) SetApplet(applet Applet) {
-	a.applet = applet
+func (a *Application) SetWindow(win Window) {
+	a.win = win
+}
+
+func (a *Application) Window() Window {
+	return a.win
 }
 
 func (a *Application) Run() {
 	a.isRunning = true
 	a.wg.Go(a.drawThread)
-	a.wg.Go(a.eventThread)
+	if a.win != nil {
+		a.wg.Go(a.eventThread)
+	}
 	a.mouse.StartEvents()
 	a.wg.Wait()
 }
@@ -235,31 +226,31 @@ func (a *Application) drawThread() {
 	dt := 30 * time.Millisecond
 	ticker := time.NewTicker(dt)
 	defer ticker.Stop()
-	a.applet.Init()
+	a.win.Init()
 	for range ticker.C {
 		if !a.isRunning {
 			break
 		}
 		a.Timer.Start()
-		a.applet.Update(dt)
+		a.win.Update(dt)
 		a.Timer.Lap()
 
-		a.applet.Refresh()
+		a.win.Refresh()
 		a.Timer.Lap()
-		
-		draw.Draw(a.mainImg, a.applet.Bounds(), a.applet.Image(),
+
+		draw.Draw(a.mainImg, a.win.Bounds(), a.win.Image(),
 			image.Point{}, draw.Src)
 		draw.Draw(a.mainImg, a.mouse.Bounds().Add(a.mainImg.Rect.Min),
 			a.mouse.Image(), image.Point{}, draw.Over)
 		a.Timer.Lap()
-		
+
 		a.pixBuf.Convert(a.mainImg, a.disp.rot)
 		a.Timer.Lap()
-		
+
 		a.disp.Send(a.pixBuf)
 		a.Timer.Stop()
 	}
-	
+
 }
 
 func (a *Application) eventThread() {
@@ -268,9 +259,35 @@ func (a *Application) eventThread() {
 		if !a.isRunning {
 			break
 		}
-		a.applet.OnInputEvent(mev)
+		a.win.OnInputEvent(mev)
 	}
 	a.mouse.Close()
 }
 
+//-----------------------------------------------------------------------------
+
+type Window interface {
+	Bounds() image.Rectangle
+	Image() *image.RGBA
+	Init()
+	Update(dt time.Duration)
+	Refresh()
+	OnInputEvent(ev MouseEvent)
+}
+
+//-----------------------------------------------------------------------------
+
+type windowEmbed struct {
+	gc     *gg.Context
+	bounds geom.Rectangle[int]
+	Root   Container
+}
+
+func (a *windowEmbed) Bounds() image.Rectangle {
+	return a.bounds.ToInt()
+}
+
+func (a *windowEmbed) Image() *image.RGBA {
+	return a.gc.Image().(*image.RGBA)
+}
 

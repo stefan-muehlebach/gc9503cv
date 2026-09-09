@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"math"
 	"time"
@@ -18,7 +19,7 @@ var (
 
 type FontsAnim struct {
 	eventHandlerEmbed
-	appletEmbed
+	windowEmbed
 	rect                              Rectangle
 	idx, lastIdx                      int
 	lineSpace float64
@@ -27,7 +28,7 @@ type FontsAnim struct {
 	fontColor, captionFontColor       colors.RGBA
 	captionFont                       *fonts.Font
 	face, captionFontFace             font.Face
-	p0                                Point
+	p0, p1                            Point
 }
 
 func NewFontsAnimation(bounds geom.Rectangle[int]) *FontsAnim {
@@ -71,6 +72,7 @@ func (a *FontsAnim) Init() {
 	a.lastIdx = -1
 	a.captionFontFace, _ = fonts.NewFace(a.captionFont, a.captionFontSize)
 	a.p0 = a.rect.SE()
+	a.p1 = a.rect.SW()
 }
 
 func (a *FontsAnim) Update(dt time.Duration) {
@@ -86,13 +88,13 @@ func (a *FontsAnim) Refresh() {
 	a.gc.SetTextColor(a.fontColor)
 	a.gc.DrawStringWrapped(text, a.rect.Min.X, a.rect.Min.Y, 0.0, 0.0,
 		a.rect.Dx(), a.lineSpace, gg.AlignLeft)
-	a.gc.Push()
-	a.gc.RotateAbout(-math.Pi/2.0, a.p0.X, a.p0.Y)
+
 	a.gc.SetFontFace(a.captionFontFace)
 	a.gc.SetTextColor(a.captionFontColor)
+	a.gc.Push()
+	a.gc.RotateAbout(-math.Pi/2.0, a.p0.X, a.p0.Y)
 	a.gc.DrawStringAnchored(a.fontList[a.idx], a.p0.X, a.p0.Y, 0.0, 0.0)
 	a.gc.Pop()
-
-	//draw.Draw(img, a.bounds.ToInt(), a.gc.Image().(*image.RGBA),
-	//	image.Point{}, draw.Over)
+	txt := fmt.Sprintf("%.2f", a.lineSpace)
+	a.gc.DrawStringAnchored(txt, a.p1.X, a.p1.Y, 0.0, 0.0)
 }

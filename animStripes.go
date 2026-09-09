@@ -10,7 +10,7 @@ import (
 
 type StripeAnim struct {
 	eventHandlerEmbed
-	appletEmbed
+	windowEmbed
 	colorList   []colors.RGBA
 	stripeWidth float64
 	off, size   geom.Point[int]
@@ -64,6 +64,4 @@ func (a *StripeAnim) Refresh() {
 			a.gc.SetPixel(col, row, color)
 		}
 	}
-	//draw.Draw(img, a.bounds.ToInt(), a.gc.Image().(*image.RGBA),
-	//	image.Point{}, draw.Over)
 }

@@ -28,7 +28,7 @@ import (
 )
 
 const (
-	fbFileName = "/dev/fb1"
+	fbFileName = "/dev/fb2"
 )
 
 // Device represents the frame buffer. It implements the draw.Image interface.
@@ -59,6 +59,8 @@ func Info(deviceFile string) (error) {
 	varInfo := C.getVarScreenInfo(C.int(file.Fd()))
 
 	log.Printf("fixed screen info:")
+	log.Printf("%+v", fixInfo)
+/*
 	log.Printf("  id")
 	log.Printf("  smem_start")
 	log.Printf("  smem_len")
@@ -74,6 +76,7 @@ func Info(deviceFile string) (error) {
 	log.Printf("  accel")
 	log.Printf("  capabilities")
 	log.Printf("  reserved")
+*/
 
 	log.Printf("variable screen info:")
 	log.Printf("%+v", varInfo)

@@ -2,7 +2,7 @@ package main
 
 import (
 	"image"
-	"image/draw"
+	//"image/draw"
 	"log"
 	"time"
 	//"fmt"
@@ -177,6 +177,7 @@ func (m *Mouse) Image() image.Image {
 	return m.cursor.img
 }
 
+/*
 func (m *Mouse) Draw(img *image.RGBA) {
 	if m.cursor == nil {
 		return
@@ -185,6 +186,7 @@ func (m *Mouse) Draw(img *image.RGBA) {
 	dstRect := m.cursor.img.Bounds().Add(orig).Add(img.Rect.Min)
 	draw.Draw(img, dstRect, m.cursor.img, image.Point{}, draw.Over)
 }
+*/
 
 func (m *Mouse) SetPosRange(rect geom.Rectangle[int]) {
 	m.posRange = rect
@@ -237,6 +239,7 @@ func (m *Mouse) processEvents() {
 		if err != nil {
 			log.Fatalf("ReadOne() failed: %v", err)
 		}
+		//log.Printf("system type: %d", e.Type)
 		switch e.Type {
 		case evdev.EV_REL:
 			switch e.Code {
@@ -280,7 +283,8 @@ func (m *Mouse) processEvents() {
 			}
 
 		case evdev.EV_KEY:
-			if e.Value == 1 {
+			switch e.Value {
+			case 1:
 				mev.Type = TypePress
 				mev.InitTime = time.Now()
 				mev.Time = mev.InitTime
@@ -304,14 +308,15 @@ func (m *Mouse) processEvents() {
 						mev.InitPos.Distance(mev.Pos) < NearThreshold {
 						mev.LongPressed = true
 						mevCopy = mev
-						//mevCopy.Type = TypeLongPress
+						mevCopy.Type = TypeLongPress
 						mevCopy.Time = time.Now()
 						m.enqueueEvent(mevCopy)
 					}
 				}()
+
 				m.enqueueEvent(mev)
 
-			} else {
+			case 0:
 				mev.Type = TypeRelease
 				mev.Time = time.Now()
 				mev.Pos = m.Pos.ToFloat()
@@ -319,7 +324,6 @@ func (m *Mouse) processEvents() {
 
 				if mev.InitPos.Distance(mev.Pos) < NearThreshold &&
 					mev.Time.Sub(mev.InitTime) < ClickDuration {
-					//log.Printf("Click will be generated")
 					mev.Type = TypeClick
 					m.enqueueEvent(mev)
 				}
@@ -327,6 +331,9 @@ func (m *Mouse) processEvents() {
 				mev.InitTime = time.Time{}
 				mev.LongPressed = false
 				mev.Button = 0x00
+
+			case 2:
+
 			}
 		default:
 			continue

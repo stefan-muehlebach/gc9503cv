@@ -44,11 +44,11 @@ func main() {
 	size := gc.Matrix().TransformRect(drawRect).Canon().Size()
 	drawRect = geom.Rectangle{Max: size}
 
-	gc.SetStrokeColor(colors.Red)
-	gc.SetStrokeWidth(4.0)
+	gc.SetLineColor(colors.Red)
+	gc.SetLineWidth(4.0)
 	gc.DrawLine(0.0, 0.0, 50.0, 0.0)
 	gc.Stroke()
-	gc.SetStrokeColor(colors.Green)
+	gc.SetLineColor(colors.Green)
 	gc.DrawLine(0.0, 0.0, 0.0, 50.0)
 	gc.Stroke()
 

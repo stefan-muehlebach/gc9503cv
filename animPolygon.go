@@ -14,7 +14,7 @@ const (
 
 type PolygonAnim struct {
 	eventHandlerEmbed
-	appletEmbed
+	windowEmbed
 	polyList []*Polygon
 }
 

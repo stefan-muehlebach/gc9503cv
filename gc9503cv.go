@@ -30,7 +30,7 @@ const (
 	defSCKPinName  = "GPIO24"
 	defCSPinName   = "GPIO25"
 	defRSTPinName  = "GPIO26"
-	defFBDevName   = "/dev/fb2"
+	defFBDevName   = "/dev/fb0"
 
 	xOffset   = 60
 	yOffset   = 0
@@ -271,20 +271,15 @@ func (d *GC9503CV) Matrix() *geom.Matrix {
 
 func (d *GC9503CV) Send(img *iliimg.ILIImage) {
 	//log.Printf("Bounds of the image: %v", img.Bounds())
-	//if d.dispBounds.Min.Y != img.Rect.Min.Y ||
-	//	d.dispBounds.Max.Y != img.Rect.Max.Y {
-	//	d.PartialArea(img.Rect)
-	//}
 	if d.fb.Bounds() != img.Bounds() {
 		log.Fatal("By now, image and screen must have equal size")
 	}
 	copy(d.fb.Pix, img.Pix)
-	//d.Cmd(PARTOFF)
 }
 
 //----------------------------------------------------------------------------
 
-// Die wenigen Befehle des Displays sind als Kontaten hier definiert koennen
+// Die wenigen Befehle des Displays sind als Konstaten hier definiert koennen
 // bspw. eingesetzt werden, um den Code etwas lesbarer zu gestalten.
 const (
 	SLEEPIN  = 0x10

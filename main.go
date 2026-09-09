@@ -10,8 +10,8 @@ import (
 
 	"periph.io/x/host/v3"
 
-	"github.com/stefan-muehlebach/gg/colors"
 	"github.com/stefan-muehlebach/gc9503cv/geom"
+	"github.com/stefan-muehlebach/gg/colors"
 )
 
 //----------------------------------------------------------------------------
@@ -23,11 +23,11 @@ const (
 //----------------------------------------------------------------------------
 
 var (
-	appletList = []string{
+	windowList = []string{
 		"Fading color stripes in RGB",
 		"Moving polygons",
 		"Moving circles",
-		"3D Animation of the Platonic Solids",
+		"3D Animation of Polyhedrons",
 		"Geometric patterns using GoColors",
 		"Showing all available fonts",
 		"Shuffle parts of an image randomly",
@@ -47,22 +47,22 @@ var (
 
 func main() {
 	var disp *GC9503CV
-	var app  *Application
+	var app *Application
 	var dispBounds, drawBounds, drawRect geom.Rectangle[int]
 	var progIdx int
 	var timeout time.Duration
 	var rotate geom.RotationType
 	var numObjs int
-	var applet Applet
-	var appletInfo string
+	var win Window
+	var winInfo string
 	var sigChan chan os.Signal
-	
-	for i, txt := range appletList {
-		appletInfo += fmt.Sprintf("\n%d - %s", i, txt)
+
+	for i, txt := range windowList {
+		winInfo += fmt.Sprintf("\n%d - %s", i, txt)
 	}
 
 	flag.IntVar(&numObjs, "numObjs", 0, "Number of objects.")
-	flag.IntVar(&progIdx, "prog", 0, "Index of program to play." + appletInfo)
+	flag.IntVar(&progIdx, "prog", 0, "Index of program to play."+winInfo)
 	flag.Var(&rotate, "rotate", "Rotation of the screen")
 	flag.DurationVar(&timeout, "timeout", 10*time.Second,
 		"Duration (for animations)")
@@ -73,7 +73,7 @@ func main() {
 	}
 
 	sigChan = make(chan os.Signal)
-    signal.Notify(sigChan, os.Interrupt)
+	signal.Notify(sigChan, os.Interrupt)
 	go func() {
 		<-sigChan
 		app.Stop()
@@ -95,39 +95,39 @@ func main() {
 
 	switch progIdx {
 	case 0:
-		applet = NewStripeAnimation(drawBounds, colorList)
+		win = NewStripeAnimation(drawBounds, colorList)
 	case 1:
-		applet = NewPolygonAnimation(drawBounds, numObjs)
+		win = NewPolygonAnimation(drawBounds, numObjs)
 	case 2:
-		applet = NewCircleAnimation(drawBounds, 0)
+		win = NewCircleAnimation(drawBounds, 0)
 	case 3:
-		applet = NewPlatonicAnimation(drawBounds, numObjs)
+		win = NewPolyhedronAnimation(drawBounds, numObjs)
 	case 4:
-		applet = NewGoColorAnimation(drawBounds)
+		win = NewGoColorAnimation(drawBounds)
 	case 5:
-		applet = NewFontsAnimation(drawBounds)
+		win = NewFontsAnimation(drawBounds)
 	case 6:
-		applet = NewShuffleAnimation(drawBounds)
+		win = NewShuffleAnimation(drawBounds)
 	default:
-		log.Fatalf("No Applet with index %d found", progIdx)
+		log.Fatalf("No Window with index %d found", progIdx)
 	}
-	app.SetApplet(applet)
+	app.SetWindow(win)
 
 	time.AfterFunc(timeout, app.Stop)
-	log.Printf("Starting Applet Nr. %d", progIdx)
+	log.Printf("Showing Window Nr. %d", progIdx)
 	app.Run()
 
-    log.Printf("----------------------------------------------------")
-    log.Printf("Timing statistics:")
+	log.Printf("----------------------------------------------------")
+	log.Printf("Timing statistics:")
 	for i := range app.Timer.NumLaps {
-		aver := app.Timer.Avg(i+1)
-		mini := app.Timer.Min(i+1)
-		maxi := app.Timer.Max(i+1)
-		log.Printf("  %5d: %v  (%v..%v)", i+1, aver, mini, maxi)
+		aver := app.Timer.Avg(i + 1)
+		mini := app.Timer.Min(i + 1)
+		maxi := app.Timer.Max(i + 1)
+		log.Printf("  %5d: %v  (%v .. %v)", i+1, aver, mini, maxi)
 	}
 	aver := app.Timer.Avg(0)
 	mini := app.Timer.Min(0)
 	maxi := app.Timer.Max(0)
-	log.Printf("  total: %v  (%v..%v)", aver, mini, maxi)
-    log.Printf("----------------------------------------------------")
+	log.Printf("  total: %v  (%v .. %v)", aver, mini, maxi)
+	log.Printf("----------------------------------------------------")
 }

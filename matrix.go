@@ -43,20 +43,45 @@ func (v Vector) Add(w Vector) Vector {
 	return Vector{v.X + w.X, v.Y + w.Y, v.Z + w.Z}
 }
 
+func (v *Vector) Add2(u, w Vector) {
+	v.X = u.X + w.X
+	v.Y = u.Y + w.Y
+}
+
 func (v Vector) Sub(w Vector) Vector {
 	return Vector{v.X - w.X, v.Y - w.Y, v.Z - w.Z}
+}
+
+func (v *Vector) Sub2(u, w Vector) {
+	v.X = u.X - w.X
+	v.Y = u.Y - w.Y
 }
 
 func (v Vector) Mul(k float64) Vector {
 	return Vector{k * v.X, k * v.Y, k * v.Z}
 }
 
+func (v *Vector) Mul2(k float64) {
+	v.X *= k
+	v.Y *= k
+}
+
 func (v Vector) Div(k float64) Vector {
 	return Vector{v.X / k, v.Y / k, v.Z / k}
 }
 
+func (v *Vector) Div2(k float64) {
+	v.X /= k
+	v.Y /= k
+}
+
 func (v Vector) Neg() Vector {
 	return Vector{-v.X, -v.Y, -v.Z}
+}
+
+func (v *Vector) Neg2() {
+	v.X = -v.X
+	v.Y = -v.Y
 }
 
 func (v Vector) Abs() float64 {
@@ -73,6 +98,12 @@ func (v Vector) Cross(w Vector) Vector {
 		v.Z*w.X - w.Z*v.X,
 		v.X*w.Y - w.X*v.Y,
 	}
+}
+
+func (v *Vector) Cross2(u, w Vector) {
+	v.X = u.Y*w.Z - w.Y*u.Z
+	v.Y = u.Z*w.X - w.Z*u.X
+	v.Z = u.X*w.Y - w.X*u.Y
 }
 
 //----------------------------------------------------------------------------
@@ -150,11 +181,34 @@ func (a Matrix) Mul(b Matrix) Matrix {
 	}
 }
 
-func (a Matrix) Transform(v Vector) Vector {
+func (c Matrix) Mul2(a, b Matrix) {
+	c[0] = a[0]*b[0] + a[1]*b[4] + a[2]*b[8]
+	c[1] = a[0]*b[1] + a[1]*b[5] + a[2]*b[9]
+	c[2] = a[0]*b[2] + a[1]*b[6] + a[2]*b[10]
+	c[3] = a[0]*b[3] + a[1]*b[7] + a[2]*b[11] + a[3]
+	c[4] = a[4]*b[0] + a[5]*b[4] + a[6]*b[8]
+	c[5] = a[4]*b[1] + a[5]*b[5] + a[6]*b[9]
+	c[6] = a[4]*b[2] + a[5]*b[6] + a[6]*b[10]
+ 	c[7] = a[4]*b[3] + a[5]*b[7] + a[6]*b[11] + a[7]
+	c[8] = a[8]*b[0] + a[9]*b[4] + a[10]*b[8]
+	c[9] = a[8]*b[1] + a[9]*b[5] + a[10]*b[9]
+	c[10] = a[8]*b[2] + a[9]*b[6] + a[10]*b[10]
+	c[11] = a[8]*b[3] + a[9]*b[7] + a[10]*b[11] + a[11]
+}
+
+func (a Matrix) TransformAffine(v Vector) Vector {
 	return Vector{
 		a[0]*v.X + a[1]*v.Y + a[2]*v.Z + a[3],
 		a[4]*v.X + a[5]*v.Y + a[6]*v.Z + a[7],
 		a[8]*v.X + a[9]*v.Y + a[10]*v.Z + a[11],
+	}
+}
+
+func (a Matrix) TransformLinear(v Vector) Vector {
+	return Vector{
+		a[0]*v.X + a[1]*v.Y + a[2]*v.Z,
+		a[4]*v.X + a[5]*v.Y + a[6]*v.Z,
+		a[8]*v.X + a[9]*v.Y + a[10]*v.Z,
 	}
 }
 
@@ -166,53 +220,53 @@ func (a Matrix) Det() float64 {
 func (a Matrix) Inv() Matrix {
 	det := a.Det()
 	adj := Matrix{}
-	adj[0] = Matrix3{
+	adj[0] = SubMatrix{
 		a[5], a[6], a[7],
 		a[9], a[10], a[11],
 	}.Det() / det
-	adj[1] = -Matrix3{
+	adj[1] = -SubMatrix{
 		a[4], a[6], a[7],
 		a[8], a[10], a[11],
 	}.Det() / det
-	adj[2] = Matrix3{
+	adj[2] = SubMatrix{
 		a[4], a[5], a[7],
 		a[8], a[9], a[11],
 	}.Det() / det
-	adj[3] = -Matrix3{
+	adj[3] = -SubMatrix{
 		a[4], a[5], a[6],
 		a[8], a[9], a[10],
 	}.Det() / det
 
-	adj[4] = -Matrix3{
+	adj[4] = -SubMatrix{
 		a[1], a[2], a[3],
 		a[9], a[10], a[11],
 	}.Det() / det
-	adj[5] = Matrix3{
+	adj[5] = SubMatrix{
 		a[0], a[2], a[3],
 		a[8], a[10], a[11],
 	}.Det() / det
-	adj[6] = -Matrix3{
+	adj[6] = -SubMatrix{
 		a[0], a[1], a[3],
 		a[8], a[9], a[11],
 	}.Det() / det
-	adj[7] = Matrix3{
+	adj[7] = SubMatrix{
 		a[0], a[1], a[2],
 		a[8], a[9], a[10],
 	}.Det() / det
 
-	adj[8] = Matrix3{
+	adj[8] = SubMatrix{
 		a[1], a[2], a[3],
 		a[5], a[6], a[7],
 	}.Det() / det
-	adj[9] = -Matrix3{
+	adj[9] = -SubMatrix{
 		a[0], a[2], a[3],
 		a[4], a[6], a[7],
 	}.Det() / det
-	adj[10] = Matrix3{
+	adj[10] = SubMatrix{
 		a[0], a[1], a[3],
 		a[4], a[5], a[7],
 	}.Det() / det
-	adj[11] = -Matrix3{
+	adj[11] = -SubMatrix{
 		a[0], a[1], a[2],
 		a[4], a[5], a[6],
 	}.Det() / det
@@ -224,20 +278,22 @@ func (a Matrix) Inv() Matrix {
 }
 
 func (a Matrix) String() string {
-	return fmt.Sprintf("[%.4v %.4v %.4v %.4v]\n[%.4v %.4v %.4v %.4v]\n[%.4v %.4v %.4v %.4v]",
-		a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9],
-		a[10], a[11])
+	return fmt.Sprintf("[%.4v %.4v %.4v %.4v]\n[%.4v %.4v %.4v %.4v]\n" +
+		"[%.4v %.4v %.4v %.4v]",
+		a[0], a[1], a[2], a[3],
+		a[4], a[5], a[6], a[7],
+		a[8], a[9], a[10], a[11])
 }
 
 //----------------------------------------------------------------------------
 
-type Matrix3 [6]float64
+type SubMatrix [6]float64
 
-func (a Matrix3) Det() float64 {
+func (a SubMatrix) Det() float64 {
 	return a[0]*a[4] - a[1]*a[3]
 }
 
-func (a Matrix3) String() string {
+func (a SubMatrix) String() string {
 	return fmt.Sprintf("[%.4v %.4v %.4v]\n[%.4v %.4v %.4v]",
 		a[0], a[1], a[2], a[3], a[4], a[5])
 }

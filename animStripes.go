@@ -3,27 +3,29 @@ package main
 import (
 	"github.com/stefan-muehlebach/gc9503cv/geom"
 	"github.com/stefan-muehlebach/gg"
-	"github.com/stefan-muehlebach/gg/colors"
+	"image"
+	"image/color"
 	"math"
 	"time"
 )
 
 type StripeAnim struct {
-	eventHandlerEmbed
 	windowEmbed
-	colorList   []colors.RGBA
+	img 		*image.RGBA
+	colorList   []color.RGBA
 	stripeWidth float64
 	off, size   geom.Point[int]
 	dt          float64
 }
 
 func NewStripeAnimation(bounds geom.Rectangle[int],
-	colorList []colors.RGBA) *StripeAnim {
+	colorList []color.RGBA) *StripeAnim {
 	a := &StripeAnim{}
 
 	a.bounds = bounds
 	a.gc = gg.NewContext(a.bounds.Dx(), a.bounds.Dy())
-	a.colorList = make([]colors.RGBA, len(colorList))
+	a.img = a.Image()
+	a.colorList = make([]color.RGBA, len(colorList))
 	copy(a.colorList, colorList)
 	a.off = bounds.Min
 	a.size = bounds.Size()
@@ -61,7 +63,7 @@ func (a *StripeAnim) Refresh() {
 			if color.B == 0xFF {
 				color.B = val
 			}
-			a.gc.SetPixel(col, row, color)
+			a.img.SetRGBA(col, row, color)
 		}
 	}
 }

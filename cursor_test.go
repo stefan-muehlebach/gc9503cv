@@ -5,7 +5,7 @@ import (
 )
 
 func TestOpenCursor(t *testing.T) {
-	cursor := OpenCursor("cross")
+	cursor := OpenCursor("cross", 32)
 	if cursor.img == nil {
 		t.Error("Couldn't open cursor")
 	} else {

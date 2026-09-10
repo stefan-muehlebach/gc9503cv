@@ -18,11 +18,11 @@ var (
 )
 
 type FontsAnim struct {
-	eventHandlerEmbed
+	// eventHandlerEmbed
 	windowEmbed
 	rect                              Rectangle
 	idx, lastIdx                      int
-	lineSpace float64
+	lineSpace                         float64
 	fontList                          []string
 	fontSize, captionFontSize, margin float64
 	fontColor, captionFontColor       colors.RGBA
@@ -44,17 +44,20 @@ func NewFontsAnimation(bounds geom.Rectangle[int]) *FontsAnim {
 	a.captionFontColor = colors.Black.Alpha(0.3)
 	a.margin = 5.0
 
-    a.SetOnClick(func(ev MouseEvent) {
-        if ev.Button.IsSet(LeftButton) {
-            a.idx = (a.idx + 1) % len(a.fontList)
-        }
-        if ev.Button.IsSet(RightButton) {
-            a.idx = (a.idx - 1 + len(a.fontList)) % len(a.fontList)
-        }
-    })
+	a.Root = NewGroup()
+	a.Root.SetSize(bounds.ToFloat().Size())
 
-	a.SetOnWheel(func(ev MouseEvent) {
-        t := float64(ev.Wheel)/100.0
+	a.Root.SetOnClick(func(ev InputEvent) {
+		if ev.Button.IsSet(LeftButton) {
+			a.idx = (a.idx + 1) % len(a.fontList)
+		}
+		if ev.Button.IsSet(RightButton) {
+			a.idx = (a.idx - 1 + len(a.fontList)) % len(a.fontList)
+		}
+	})
+
+	a.Root.SetOnWheel(func(ev InputEvent) {
+		t := float64(ev.Wheel) / 100.0
 		a.lineSpace = 1.0 + t
 	})
 

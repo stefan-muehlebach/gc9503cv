@@ -6,8 +6,8 @@ import (
 	"log"
 	"time"
 	//"fmt"
-	"github.com/stefan-muehlebach/gc9503cv/geom"
 	"github.com/holoplot/go-evdev"
+	"github.com/stefan-muehlebach/gc9503cv/geom"
 )
 
 // Mit diesem Datentyp werden die unterschiedlichen Event-Arten abgebildet,
@@ -15,38 +15,41 @@ import (
 // werden koennen. Es ist Aufgabe der Objekte 'Screen' und 'Window', aus den
 // rohen Ereginisse vom Touchscreen (Press, Drag, Release) diese Events zu
 // erzeugen.
-type MouseEventType uint32
+type InputEventType uint32
 
 const (
 	// Mit Einfuehrung der Maus, wird dieses Event (fahren ohne eine Taste
 	// gedrueckt zu halten) relevant.
-	TypeMove MouseEventType = iota
-	// TypePress wird erzeugt, wenn der Finger oder Stift auf ein Objekt
+	MoveEvent InputEventType = iota
+	// PressEvent wird erzeugt, wenn der Finger oder Stift auf ein Objekt
 	// gedrueckt wird. Dieses Event ist vergleichbar mit einem Press-Event
 	// durch die Maus.
-	TypePress
-	// TypeRelease wird erzeugt, wenn man den Finger oder Stift wieder vom
+	PressEvent
+	// ReleaseEvent wird erzeugt, wenn man den Finger oder Stift wieder vom
 	// Bildschirm hebt - vergleichbar mit dem Loslassen der Maustaste.
-	TypeRelease
+	ReleaseEvent
 	// Im Unterschied zur Maus, kann ein 'Wandern' des Druckpunktes (Finger
 	// oder Maus) nur erkannt werden, wenn man den Bildschirm beruehrt.
 	// D.h. es gibt nur Drag-Events - ein Move-Event ist unbekannt.
-	TypeDrag
+	DragEvent
 	// Wird laengere Zeit auf ein bestimmtes Objekt gedrueckt, erzeugt dies
-	// das TypeLongPress-Event (siehe auch die Konstanten LongPressThreshold
+	// das LongPressEvent-Event (siehe auch die Konstanten LongPressThreshold
 	// und NearThreshold).
-	TypeLongPress
+	LongPressEvent
 	// Wurde das Mausrad gedreht
-	TypeWheel
+	WheelEvent
 	// Verlaesst oder Betritt der Druckpunkt beim Wandern ein Objekt, dann
-	// werden die Events TypeLeave, resp. TypeEnter gesendet.
-	TypeEnter
-	TypeLeave
+	// werden die Events TypeLeave, resp. EnterEvent gesendet.
+	EnterEvent
+	LeaveEvent
 	// Ein Tap, bzw. DoubleTap entspricht dem Klicken resp. Doppelklicken mit
 	// der Maus. Es gibt sowohl zeitliche, als auch raeumliche Grenzen, wann
 	// ein Tap, resp. DoubleTap erzeugt wird (siehe Konstanten weiter unten).
-	TypeClick
-	TypeDoubleClick
+	ClickEvent
+	DoubleClickEvent
+	// Diesen Event-Typ verwendet die Applikation, um beim Stoppen mit diesem
+	// Event allfaellige Handler korrekt zu terminieren.
+	QuitEvent
 	numEvents
 )
 
@@ -59,11 +62,11 @@ const (
 )
 
 func (b MouseButtonType) IsSet(val MouseButtonType) bool {
-    if b&val != 0x00 {
-        return true
-    } else {
-        return false
-    }
+	if b&val != 0x00 {
+		return true
+	} else {
+		return false
+	}
 }
 
 //----------------------------------------------------------------------------
@@ -88,27 +91,27 @@ const (
 
 // Damit beim Debuggen klar ist, um welchen Event-Typ es sich handelt,
 // implementiert Type das Stringer-Interface.
-func (t MouseEventType) String() string {
+func (t InputEventType) String() string {
 	switch t {
-	case TypeMove:
+	case MoveEvent:
 		return "Move"
-	case TypePress:
+	case PressEvent:
 		return "Press"
-	case TypeRelease:
+	case ReleaseEvent:
 		return "Release"
-	case TypeDrag:
+	case DragEvent:
 		return "Drag"
-	case TypeLongPress:
+	case LongPressEvent:
 		return "LongPress"
-	case TypeWheel:
+	case WheelEvent:
 		return "Wheel"
-	case TypeEnter:
+	case EnterEvent:
 		return "Enter"
-	case TypeLeave:
+	case LeaveEvent:
 		return "Leave"
-	case TypeClick:
+	case ClickEvent:
 		return "Click"
-	case TypeDoubleClick:
+	case DoubleClickEvent:
 		return "DoubleClick"
 	default:
 		return "(Unknown Type)"
@@ -122,7 +125,7 @@ const (
 // Dies ist der Funktionstyp für den PenEvent-Handler - also jene Funktion,
 // welche beim Eintreffen eines Interrupts vom STMPE610 aufgerufen werden
 // soll.
-type MouseEventChannelType chan MouseEvent
+type MouseEventChannelType chan InputEvent
 
 // Dieser Typ steht fuer das SPI Interface zum STMPE - dem Touchscreen.
 type Mouse struct {
@@ -131,7 +134,7 @@ type Mouse struct {
 	LeftBtn, MiddleBtn, RightBtn int32
 	EventQ                       MouseEventChannelType
 	dev                          *evdev.InputDevice
-	posRange             geom.Rectangle[int]
+	posRange                     geom.Rectangle[int]
 	minWheel, maxWheel           int
 	cursor                       *Cursor
 	isOpen                       bool
@@ -151,7 +154,7 @@ func OpenMouse() *Mouse {
 		log.Fatalf("evdev.Open failed: %v", err)
 	}
 	m.LeftBtn, m.MiddleBtn, m.RightBtn = 0, 0, 0
-	m.EventQ = make(chan MouseEvent, eventQueueSize)
+	m.EventQ = make(chan InputEvent, eventQueueSize)
 	m.isOpen = true
 	return m
 }
@@ -199,13 +202,17 @@ func (m *Mouse) SetWheelRange(ini, min, max int) {
 	m.maxWheel = max
 }
 
-func (m *Mouse) StartEvents() {
+func (m *Mouse) Start() {
 	go m.processEvents()
+}
+
+func (m *Mouse) Stop() {
+	m.enqueueEvent(InputEvent{Type: QuitEvent})
 }
 
 // Diese Funktion wird von 'aussen' aufgerufen und gibt das nächste Pen-Event
 // zurück. Es ist eine Alternative zum Lesen aus der öffentlichen Event-Queue.
-func (m *Mouse) WaitForEvent() MouseEvent {
+func (m *Mouse) WaitForEvent() InputEvent {
 	return <-m.EventQ
 }
 
@@ -216,7 +223,7 @@ func (m *Mouse) WaitForEvent() MouseEvent {
 //
 // Mit dem auskommentierten Code kann für Testzwecke dafür gesorgt werden,
 // dass bei einem Fehler ein Runtime-Panic ausgelöst wird.
-func (m *Mouse) enqueueEvent(ev MouseEvent) {
+func (m *Mouse) enqueueEvent(ev InputEvent) {
 	defer func() {
 		if x := recover(); x != nil {
 			log.Printf("Runtime panic: %v\n", x)
@@ -232,7 +239,7 @@ func (m *Mouse) enqueueEvent(ev MouseEvent) {
 //-----------------------------------------------------------------------------
 
 func (m *Mouse) processEvents() {
-	var mev MouseEvent
+	var mev InputEvent
 
 	for {
 		e, err := m.dev.ReadOne()
@@ -260,9 +267,9 @@ func (m *Mouse) processEvents() {
 					}
 				}
 				if mev.Button > 0 {
-					mev.Type = TypeDrag
+					mev.Type = DragEvent
 				} else {
-					mev.Type = TypeMove
+					mev.Type = MoveEvent
 				}
 				mev.Pos = m.Pos.ToFloat()
 				mev.Time = time.Now()
@@ -274,7 +281,7 @@ func (m *Mouse) processEvents() {
 				} else if m.Wheel >= m.maxWheel {
 					m.Wheel = m.maxWheel - 1
 				}
-				mev.Type = TypeWheel
+				mev.Type = WheelEvent
 				mev.Wheel = m.Wheel
 				mev.Time = time.Now()
 				m.enqueueEvent(mev)
@@ -285,7 +292,7 @@ func (m *Mouse) processEvents() {
 		case evdev.EV_KEY:
 			switch e.Value {
 			case 1:
-				mev.Type = TypePress
+				mev.Type = PressEvent
 				mev.InitTime = time.Now()
 				mev.Time = mev.InitTime
 				mev.InitPos = m.Pos.ToFloat()
@@ -303,28 +310,27 @@ func (m *Mouse) processEvents() {
 				go func() {
 					mevCopy := mev
 					time.Sleep(LongPressThreshold)
-					if (mev.Type == TypePress || mev.Type == TypeDrag) &&
+					if (mev.Type == PressEvent || mev.Type == DragEvent) &&
 						mev.Button == mevCopy.Button &&
 						mev.InitPos.Distance(mev.Pos) < NearThreshold {
 						mev.LongPressed = true
 						mevCopy = mev
-						mevCopy.Type = TypeLongPress
+						mevCopy.Type = LongPressEvent
 						mevCopy.Time = time.Now()
 						m.enqueueEvent(mevCopy)
 					}
 				}()
-
 				m.enqueueEvent(mev)
 
 			case 0:
-				mev.Type = TypeRelease
+				mev.Type = ReleaseEvent
 				mev.Time = time.Now()
 				mev.Pos = m.Pos.ToFloat()
 				m.enqueueEvent(mev)
 
 				if mev.InitPos.Distance(mev.Pos) < NearThreshold &&
 					mev.Time.Sub(mev.InitTime) < ClickDuration {
-					mev.Type = TypeClick
+					mev.Type = ClickEvent
 					m.enqueueEvent(mev)
 				}
 				mev.InitPos = Point{}
@@ -333,49 +339,23 @@ func (m *Mouse) processEvents() {
 				mev.Button = 0x00
 
 			case 2:
-
+				// Fuer repetition eines buttons.
 			}
 		default:
 			continue
 		}
-		//m.enqueueEvent(mev)
 	}
 }
 
 //----------------------------------------------------------------------------
 
-// In diesem Datentyp ist alles zusammengefasst, was an Touch-Events an die
-// applikatorischen Elemente gesendet werden kann.
-/*
-type Event struct {
-	// Der Typ des Events (moegliche Typen: die die Konstanten TypeXXX).
-	Type MouseEventType
-	// Alle Events werden sequenziell durchnumeriert, damit man bspw. das
-	// Release-Event mit einem vorgaengigen Press-Event in Verbindung bringen
-	// kann.
-	//SeqNumber int
-	// Dieses Feld wird auf true gesetzt, sobald ein LongPressed-Ereignis
-	// erkannt wird.
-	LongPressed bool
-	// In InitTime und InitPos werden Zeitpunkt und Position des Press-Events
-	// (des initialen Events) festgehalten.
-	InitTime time.Time
-	InitPos  geom.Point[int]
-	// Wohingegen Time und Pos die Zeit und die Position des aktuellen Events
-	// enthalten.
-	Time time.Time
-	Pos  geom.Point[int]
-}
-*/
-
 // Jedes Ereignis des Touchscreens wird durch eine Variable des Typs
 // 'Event' repraesentiert.
-type MouseEvent struct {
-	Type           MouseEventType
+type InputEvent struct {
+	Type           InputEventType
 	Time, InitTime time.Time
 	Pos, InitPos   Point // geom.Point[int]
 	Button         MouseButtonType
 	LongPressed    bool
 	Wheel          int
 }
-

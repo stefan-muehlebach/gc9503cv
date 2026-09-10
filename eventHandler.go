@@ -3,7 +3,7 @@ package main
 // Konsequenterweise wurde auch fuer diese Funktionalitaet ein Interface
 // gebaut.
 type EventHandler interface {
-	OnInputEvent(ev MouseEvent)
+	OnInputEvent(ev InputEvent)
 	SetOnMove(fnc EventHandlerFunc)
 	SetOnPress(fnc EventHandlerFunc)
 	SetOnRelease(fnc EventHandlerFunc)
@@ -18,7 +18,7 @@ type EventHandler interface {
 
 // Alle Callback-Handler fuer die Ereignisse vom Touchscreen, muessen folgendes
 // Profil aufweisen.
-type EventHandlerFunc func(ev MouseEvent)
+type EventHandlerFunc func(ev InputEvent)
 
 // Alle GUI-Elemente, welche ueber den Touchscreen gesteuert werden sollen,
 // muesssen diesen Datentyp einbetten. Damit werden auch alle unten
@@ -35,11 +35,11 @@ type eventHandlerEmbed struct {
 // Es ist jedoch ueblich, dass ein GUI-Element diese Methode ueberschreibt
 // um bspw. visuelle Anpassungen zu machen und dann selber CallTouchFunc
 // aufruft.
-func (m *eventHandlerEmbed) OnInputEvent(ev MouseEvent) {
+func (m *eventHandlerEmbed) OnInputEvent(ev InputEvent) {
 	m.CallEventHandler(ev)
 }
 
-func (m *eventHandlerEmbed) CallEventHandler(ev MouseEvent) {
+func (m *eventHandlerEmbed) CallEventHandler(ev InputEvent) {
 	if fnc := m.eventHandlerList[ev.Type]; fnc != nil {
 		fnc(ev)
 	}
@@ -48,7 +48,7 @@ func (m *eventHandlerEmbed) CallEventHandler(ev MouseEvent) {
 // Mit SetHandler wird die Funktion fnc als Handler fuer den Event typ
 // registriert. Eine bereits registrierte Funktion wird damit ueberschrieben.
 func (m *eventHandlerEmbed) setHandler(fnc EventHandlerFunc,
-		types ...MouseEventType) {
+	types ...InputEventType) {
 	for _, typ := range types {
 		m.eventHandlerList[typ] = fnc
 	}
@@ -56,50 +56,50 @@ func (m *eventHandlerEmbed) setHandler(fnc EventHandlerFunc,
 
 // Registriert fnc als Handler fuer den Move-Event.
 func (m *eventHandlerEmbed) SetOnMove(fnc EventHandlerFunc) {
-	m.setHandler(fnc, TypeMove)
+	m.setHandler(fnc, MoveEvent)
 }
 
 // Registriert fnc als Handler fuer den Press-Event.
 func (m *eventHandlerEmbed) SetOnPress(fnc EventHandlerFunc) {
-	m.setHandler(fnc, TypePress)
+	m.setHandler(fnc, PressEvent)
 }
 
 // Registriert fnc als Handler fuer den Release-Event.
 func (m *eventHandlerEmbed) SetOnRelease(fnc EventHandlerFunc) {
-	m.setHandler(fnc, TypeRelease)
+	m.setHandler(fnc, ReleaseEvent)
 }
 
 // Registriert fnc als Handler fuer den Drag-Event.
 func (m *eventHandlerEmbed) SetOnDrag(fnc EventHandlerFunc) {
-	m.setHandler(fnc, TypeDrag)
+	m.setHandler(fnc, DragEvent)
 }
 
 // Registriert fnc als Handler fuer den LongPress-Event.
 func (m *eventHandlerEmbed) SetOnLongPress(fnc EventHandlerFunc) {
-	m.setHandler(fnc, TypeLongPress)
+	m.setHandler(fnc, LongPressEvent)
 }
 
 // Registriert fnc als Handler fuer den Wheel-Event.
 func (m *eventHandlerEmbed) SetOnWheel(fnc EventHandlerFunc) {
-	m.setHandler(fnc, TypeWheel)
+	m.setHandler(fnc, WheelEvent)
 }
 
 // Registriert fnc als Handler fuer den Enter-Event.
 func (m *eventHandlerEmbed) SetOnEnter(fnc EventHandlerFunc) {
-	m.setHandler(fnc, TypeEnter)
+	m.setHandler(fnc, EnterEvent)
 }
 
 // Registriert fnc als Handler fuer den Leave-Event.
 func (m *eventHandlerEmbed) SetOnLeave(fnc EventHandlerFunc) {
-	m.setHandler(fnc, TypeLeave)
+	m.setHandler(fnc, LeaveEvent)
 }
 
 // Registriert fnc als Handler fuer den Click-Event.
 func (m *eventHandlerEmbed) SetOnClick(fnc EventHandlerFunc) {
-	m.setHandler(fnc, TypeClick)
+	m.setHandler(fnc, ClickEvent)
 }
 
 // Registriert fnc als Handler fuer den DoubleClick-Event.
 func (m *eventHandlerEmbed) SetOnDoubleClick(fnc EventHandlerFunc) {
-	m.setHandler(fnc, TypeDoubleClick)
+	m.setHandler(fnc, DoubleClickEvent)
 }

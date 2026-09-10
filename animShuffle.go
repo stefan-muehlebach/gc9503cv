@@ -1,10 +1,10 @@
 package main
 
 import (
-	"log"
-	"math/rand/v2"
 	"image"
 	"image/draw"
+	"log"
+	"math/rand/v2"
 	"time"
 
 	"github.com/stefan-muehlebach/gc9503cv/geom"
@@ -13,17 +13,17 @@ import (
 )
 
 type ShuffleAnim struct {
-	eventHandlerEmbed
+	// eventHandlerEmbed
 	windowEmbed
-	size image.Rectangle
-	img *image.RGBA
-	fg image.Image
+	size       image.Rectangle
+	img        *image.RGBA
+	fg         image.Image
 	originList []image.Point
-	idxList []int
-	sz image.Rectangle
-	orig image.Point
-	t0 time.Time
-	dt time.Duration
+	idxList    []int
+	sz         image.Rectangle
+	orig       image.Point
+	t0         time.Time
+	dt         time.Duration
 }
 
 func NewShuffleAnimation(bounds geom.Rectangle[int]) *ShuffleAnim {
@@ -43,7 +43,10 @@ func NewShuffleAnimation(bounds geom.Rectangle[int]) *ShuffleAnim {
 	a.sz = image.Rect(0, 0, 80, 80)
 	a.orig = image.Point{}
 
-	a.SetOnClick(func(ev MouseEvent) {
+	a.Root = NewGroup()
+	a.Root.SetSize(bounds.ToFloat().Size())
+
+	a.Root.SetOnClick(func(ev InputEvent) {
 		if ev.Button.IsSet(LeftButton) {
 			a.dt = 30 * time.Millisecond
 		}
@@ -80,7 +83,7 @@ func (a *ShuffleAnim) Update(dt time.Duration) {
 		rand.Shuffle(len(a.idxList), func(i, j int) {
 			a.idxList[i], a.idxList[j] = a.idxList[j], a.idxList[i]
 		})
-		a.dt = 6*a.dt/5
+		a.dt = 6 * a.dt / 5
 		a.t0 = time.Now()
 	}
 }
@@ -95,4 +98,3 @@ func (a *ShuffleAnim) Refresh() {
 			srcPt, draw.Over)
 	}
 }
-

@@ -41,6 +41,7 @@ const (
 type (
 	Point     = geom.Point[float64]
 	Rectangle = geom.Rectangle[float64]
+	Size	  = geom.Point[float64]
 )
 
 //----------------------------------------------------------------------------

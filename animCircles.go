@@ -4,7 +4,7 @@ import (
 	"github.com/stefan-muehlebach/gc9503cv/geom"
 	"github.com/stefan-muehlebach/gg"
 	"github.com/stefan-muehlebach/gg/colors"
-	// "log"
+	"log"
 	"math"
 	"math/rand/v2"
 	"time"
@@ -24,33 +24,44 @@ func RandVel(low, high float64) float64 {
 }
 
 type CircleAnim struct {
-	eventHandlerEmbed
 	windowEmbed
 	selection Node
+	canvas    *Panel
 }
 
-func NewCircleAnimation(b geom.Rectangle[int], numObjs int) *CircleAnim {
+func NewCircleAnimation(bounds geom.Rectangle[int], numObjs int) *CircleAnim {
 	a := &CircleAnim{}
-	a.bounds = b
+	a.bounds = bounds
 	a.gc = gg.NewContext(a.bounds.Dx(), a.bounds.Dy())
 	if numObjs <= 0 {
 		numObjs = defNumCircles
 	}
-	bounds := a.bounds.ToFloat()
-	rect := bounds.Sub(bounds.Min)
 
-	a.Root = NewGroup()
-	a.Root.Move(Point{})
-	a.Root.Resize(bounds.Size())
+	a.Root = NewPanel(colors.SlateGray)
+	a.Root.SetLayoutManager(NewPadLayout(20))
+	a.Root.SetSize(bounds.ToFloat().Size())
+
+	a.canvas = NewPanel(colors.DarkSlateGray)
+	a.canvas.SetLayoutManager(&NullLayout{})
+	a.Root.Add(a.canvas)
+
+	log.Printf("a.canvas.Bounds(): %v", a.canvas.Bounds())
+	log.Printf("a.canvas.Rect()  : %v", a.canvas.Rect())
 
 	for range numObjs {
-		a.Root.Add(NewCircle(rect, colors.Greens))
+		a.canvas.Add(NewCircle(a.canvas.Rect(), colors.Greens))
 	}
 
-	a.Root.SetOnClick(func(ev MouseEvent) {
-		c := NewCircle(rect, colors.Yellows)
-		c.Move(ev.Pos)
-		a.Root.Add(c)
+	a.canvas.SetOnClick(func(ev InputEvent) {
+		switch {
+		case ev.Button.IsSet(LeftButton):
+			c := NewCircle(a.canvas.Rect(), colors.Yellows)
+			pt := ev.Pos.Sub(a.canvas.Pos())
+			c.SetPos(pt.SubXY(c.r, c.r))
+			a.canvas.Add(c)
+		default:
+			log.Printf("No click with left button")
+		}
 	})
 
 	return a
@@ -65,12 +76,9 @@ func (a *CircleAnim) Init() {
 func (a *CircleAnim) Update(dt time.Duration) {
 	a.Root.Update(dt)
 
-/*
-	cont := a.Root.(*Group)
-	cont.Update(dt)
-	for el := cont.childList.Front(); el != nil; el = el.Next() {
+	for el := a.canvas.childList.Front(); el != nil; el = el.Next() {
 		this := el.Value.(*Circle)
-		for oel := cont.childList.Front(); oel != nil; oel = oel.Next() {
+		for oel := a.canvas.childList.Front(); oel != nil; oel = oel.Next() {
 			other := oel.Value.(*Circle)
 			if this.r <= other.r {
 				continue
@@ -79,11 +87,11 @@ func (a *CircleAnim) Update(dt time.Duration) {
 				t := other.r / (this.r + other.r)
 				this.fillColor = this.fillColor.Interpolate(other.fillColor, t)
 				this.r += math.Cbrt(other.r)
-				cont.childList.Remove(oel)
+				this.SetSize(Point{2 * this.r, 2 * this.r})
+				a.canvas.childList.Remove(oel)
 			}
 		}
 	}
-*/
 }
 
 func (a *CircleAnim) Refresh() {
@@ -91,27 +99,21 @@ func (a *CircleAnim) Refresh() {
 	a.Root.Draw(a.gc)
 }
 
-func (a *CircleAnim) OnInputEvent(ev MouseEvent) {
-	if n := a.Root.Contains(ev.Pos); n != nil {
-		n.OnInputEvent(ev)
-	}
-}
-
 //-----------------------------------------------------------------------
 
 const (
 	radMin = 15.0
 	radMax = 60.0
-	velMin =  0.7
-	velMax =  3.5
+	velMin = 0.7
+	velMax = 3.5
 )
 
 type Circle struct {
 	nodeEmbed
-	rect                 Rectangle
-	vel             Point
-	r    float64
-	lineColor, fillColor colors.RGBA
+	rect                             Rectangle
+	vel                              Point
+	r                                float64
+	lineColor, fillColor             colors.RGBA
 	isActive, isSelected, isDragging bool
 }
 
@@ -123,32 +125,43 @@ func NewCircle(rect Rectangle, colGrp colors.ColorGroup) *Circle {
 	c.rect = rect
 	t := rand.Float64()
 	c.r = (1.0-t)*radMin + t*radMax
-	c.size = Point{2*c.r, 2*c.r}
-	c.pos = rect.Inset(c.r, c.r).RelPos(rand.Float64(), rand.Float64())
+	c.size = Point{2 * c.r, 2 * c.r}
+	r := rect.Inset(c.r, c.r)
+	mp := r.RelPos(rand.Float64(), rand.Float64())
+	c.pos = mp.SubXY(c.r, c.r)
 	vel := (1.0-t)*velMax + t*velMin
-	dir := 2.0*math.Pi*rand.Float64()
-	c.vel = Point{vel*math.Sin(dir), vel*math.Cos(dir)}
+	dir := 2.0 * math.Pi * rand.Float64()
+	c.vel = Point{vel * math.Sin(dir), vel * math.Cos(dir)}
 	c.lineColor = colors.White
 	c.fillColor = colors.RandColorByGroup(colGrp).Alpha(0.8)
 
-	c.SetOnPress(func(ev MouseEvent) {
+	c.SetOnPress(func(ev InputEvent) {
 		if ev.Button.IsSet(LeftButton) {
 			c.isDragging = true
 			dp = ev.Pos.Sub(c.Pos())
 		}
 	})
 
-	c.SetOnDrag(func(ev MouseEvent) {
-		c.Move(ev.Pos.Sub(dp))
+	c.SetOnDrag(func(ev InputEvent) {
+		if c.isDragging {
+			c.SetPos(ev.Pos.Sub(dp))
+		}
 	})
 
-	c.SetOnRelease(func(ev MouseEvent) {
+	c.SetOnRelease(func(ev InputEvent) {
 		if ev.Button.IsSet(LeftButton) {
 			c.isDragging = false
 		}
 	})
 
-	c.SetOnClick(func(ev MouseEvent) {
+	c.SetOnEnter(func(ev InputEvent) {
+		c.isActive = true
+	})
+	c.SetOnLeave(func(ev InputEvent) {
+		c.isActive = false
+	})
+
+	c.SetOnClick(func(ev InputEvent) {
 		if ev.Button.IsSet(LeftButton) {
 			c.isSelected = !c.isSelected
 		}
@@ -156,7 +169,7 @@ func NewCircle(rect Rectangle, colGrp colors.ColorGroup) *Circle {
 			c.parent.Del(c)
 		}
 	})
-	
+
 	return c
 }
 
@@ -165,22 +178,32 @@ func (c *Circle) Update(dt time.Duration) {
 		return
 	}
 	c.pos.Move(c.vel)
-	if c.pos.X-c.r < c.rect.Min.X || c.pos.X+c.r > c.rect.Max.X {
+	b := c.Bounds()
+	if b.Min.X < c.rect.Min.X || b.Max.X > c.rect.Max.X {
 		c.vel.X *= -1.0
 		c.pos.X += c.vel.X
 	}
-	if c.pos.Y-c.r < c.rect.Min.Y || c.pos.Y+c.r > c.rect.Max.Y {
+	if b.Min.Y < c.rect.Min.Y || b.Max.Y > c.rect.Max.Y {
 		c.vel.Y *= -1.0
 		c.pos.Y += c.vel.Y
 	}
 }
 
-func (c *Circle) Bounds() Rectangle {
-	return Rectangle{Min: c.pos.SubXY(c.r, c.r), Max: c.pos.AddXY(c.r, c.r)}
+func (c *Circle) SetSize(size Point) {
+	sz := min(size.X, size.Y)
+	c.r = sz / 2.0
+	ds := c.size.X - sz
+	c.pos = c.pos.AddXY(ds/2.0, ds/2.0)
+	c.size = Point{2 * c.r, 2 * c.r}
 }
 
-func (c *Circle) Contains(pt Point) Node {
-	if c.pos.Distance(pt) <= c.r {
+func (c *Circle) Bounds() Rectangle {
+	return Rectangle{Min: c.pos, Max: c.pos.Add(c.size)}
+}
+
+func (c *Circle) FindTarget(pt Point) Node {
+	mp := c.pos.AddXY(c.r, c.r)
+	if mp.Distance(pt) <= c.r {
 		return c
 	} else {
 		return nil
@@ -188,28 +211,21 @@ func (c *Circle) Contains(pt Point) Node {
 }
 
 func (c *Circle) Draw(gc *gg.Context) {
-	gc.DrawCircle(c.pos.X, c.pos.Y, c.r)
-/*
-	gc.ClosePath()
-	if c.isActive || c.isSelected {
+	mp := c.pos.AddXY(c.r, c.r)
+	gc.DrawCircle(mp.X, mp.Y, c.r)
+
+	if c.isActive {
 		gc.SetLineWidth(7.0)
 	} else {
 		gc.SetLineWidth(2.0)
 	}
-	if c.isSelected {
-		gc.SetLineColor(colors.GoYellow)
-	} else {
-		gc.SetLineColor(c.lineColor)
-	}
-*/
-	gc.SetLineWidth(2.0)
 	gc.SetLineColor(c.lineColor)
 	gc.SetFillColor(c.fillColor)
 	gc.FillStroke()
 
 	if c.isSelected {
 		b := c.Bounds()
-		l := c.r/3.0
+		l := c.r / 3.0
 		gc.SetLineWidth(3.0)
 		gc.SetLineColor(colors.Red)
 		gc.MoveTo(b.Min.X, b.Min.Y+l)
@@ -236,7 +252,8 @@ func (c *Circle) Draw(gc *gg.Context) {
 }
 
 func (c *Circle) Overlaps(c2 *Circle) bool {
-	d := c.pos.Distance(c2.pos)
-	return c.r >= d + c2.r
+	mp1 := c.pos.AddXY(c.r, c.r)
+	mp2 := c2.pos.AddXY(c2.r, c2.r)
+	d := mp1.Distance(mp2)
+	return c.r >= d+c2.r
 }
-

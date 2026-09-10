@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"image/color"
 	"log"
 	"os"
 	"os/signal"
@@ -11,7 +12,6 @@ import (
 	"periph.io/x/host/v3"
 
 	"github.com/stefan-muehlebach/gc9503cv/geom"
-	"github.com/stefan-muehlebach/gg/colors"
 )
 
 //----------------------------------------------------------------------------
@@ -31,15 +31,16 @@ var (
 		"Geometric patterns using GoColors",
 		"Showing all available fonts",
 		"Shuffle parts of an image randomly",
+		"AdaGUI",
 	}
 
-	colorList = []colors.RGBA{
-		colors.RGBA{0xff, 0x00, 0x00, 0xff},
-		colors.RGBA{0xff, 0xff, 0x00, 0xff},
-		colors.RGBA{0x00, 0xff, 0x00, 0xff},
-		colors.RGBA{0x00, 0xff, 0xff, 0xff},
-		colors.RGBA{0x00, 0x00, 0xff, 0xff},
-		colors.RGBA{0xff, 0x00, 0xff, 0xff},
+	colorList = []color.RGBA{
+		color.RGBA{0xff, 0x00, 0x00, 0xff},
+		color.RGBA{0xff, 0xff, 0x00, 0xff},
+		color.RGBA{0x00, 0xff, 0x00, 0xff},
+		color.RGBA{0x00, 0xff, 0xff, 0xff},
+		color.RGBA{0x00, 0x00, 0xff, 0xff},
+		color.RGBA{0xff, 0x00, 0xff, 0xff},
 	}
 )
 
@@ -108,6 +109,8 @@ func main() {
 		win = NewFontsAnimation(drawBounds)
 	case 6:
 		win = NewShuffleAnimation(drawBounds)
+	case 7:
+		win = NewGUI(drawBounds)
 	default:
 		log.Fatalf("No Window with index %d found", progIdx)
 	}

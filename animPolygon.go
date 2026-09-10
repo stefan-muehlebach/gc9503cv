@@ -13,9 +13,8 @@ const (
 )
 
 type PolygonAnim struct {
-	eventHandlerEmbed
 	windowEmbed
-	polyList []*Polygon
+	canvas *Panel
 }
 
 func NewPolygonAnimation(bounds geom.Rectangle[int],
@@ -24,15 +23,23 @@ func NewPolygonAnimation(bounds geom.Rectangle[int],
 	a := &PolygonAnim{}
 
 	a.bounds = bounds
-	a.gc = gg.NewContext(a.bounds.Dx(), a.bounds.Dy())
+	a.gc = gg.NewContext(bounds.Dx(), bounds.Dy())
 	if numObjs <= 0 {
 		numObjs = defNumPolygons
 	}
-	rect := a.bounds.Sub(a.bounds.Min).ToFloat()
-	a.polyList = make([]*Polygon, numObjs)
+
+	a.Root = NewPanel(colors.SlateGray)
+	a.Root.SetLayoutManager(NewPadLayout(20))
+	a.Root.SetSize(bounds.ToFloat().Size())
+
+	a.canvas = NewPanel(colors.DarkSlateGray)
+	a.canvas.SetLayoutManager(&NullLayout{})
+	a.Root.Add(a.canvas)
+
 	for i := 0; i < numObjs; i++ {
-		a.polyList[i] = NewPolygon(numEdges, rect)
+		a.canvas.Add(NewPolygon(numEdges, a.canvas.Bounds()))
 	}
+
 	return a
 }
 
@@ -43,36 +50,32 @@ func (a *PolygonAnim) Init() {
 }
 
 func (a *PolygonAnim) Update(dt time.Duration) {
-	for _, p := range a.polyList {
-		p.Update(dt)
-	}
+	a.Root.Update(dt)
 }
 
 func (a *PolygonAnim) Refresh() {
 	a.gc.Clear(colors.Black)
-	for _, p := range a.polyList {
-		p.Draw(a.gc)
-	}
-	//draw.Draw(img, a.bounds.ToInt(), a.gc.Image().(*image.RGBA),
-	//	image.Point{}, draw.Over)
+	a.Root.Draw(a.gc)
 }
 
 //-----------------------------------------------------------------------
 
 type Polygon struct {
+	nodeEmbed
 	rect                   Rectangle
-	pos, vel               []Point
+	posList                []Point
+	velList                []Point
 	strokeColor, fillColor colors.RGBA
 }
 
 func NewPolygon(edges int, rect Rectangle) *Polygon {
 	p := &Polygon{}
 	p.rect = rect
-	p.pos = make([]Point, edges)
-	p.vel = make([]Point, edges)
+	p.posList = make([]Point, edges)
+	p.velList = make([]Point, edges)
 	for i := range edges {
-		p.pos[i] = rect.RelPos(rand.Float64(), rand.Float64())
-		p.vel[i] = Point{
+		p.posList[i] = rect.RelPos(rand.Float64(), rand.Float64())
+		p.velList[i] = Point{
 			rand.Float64()*5.0 - 2.0,
 			rand.Float64()*5.0 - 2.0,
 		}
@@ -83,23 +86,23 @@ func NewPolygon(edges int, rect Rectangle) *Polygon {
 }
 
 func (p *Polygon) Update(dt time.Duration) {
-	for i, pos := range p.pos {
-		pos.Move(p.vel[i])
+	for i, pos := range p.posList {
+		pos.Move(p.velList[i])
 		if pos.X < p.rect.Min.X || pos.X > p.rect.Max.X {
-			p.vel[i].X *= -1
-			pos.X += p.vel[i].X
+			p.velList[i].X *= -1
+			pos.X += p.velList[i].X
 		}
 		if pos.Y < p.rect.Min.Y || pos.Y > p.rect.Max.Y {
-			p.vel[i].Y *= -1
-			pos.Y += p.vel[i].Y
+			p.velList[i].Y *= -1
+			pos.Y += p.velList[i].Y
 		}
-		p.pos[i] = pos
+		p.posList[i] = pos
 	}
 }
 
 func (p *Polygon) Draw(gc *gg.Context) {
-	gc.MoveTo(p.pos[0].X, p.pos[0].Y)
-	for _, pos := range p.pos[1:] {
+	gc.MoveTo(p.posList[0].X, p.posList[0].Y)
+	for _, pos := range p.posList[1:] {
 		gc.LineTo(pos.X, pos.Y)
 	}
 	gc.ClosePath()

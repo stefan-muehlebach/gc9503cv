@@ -607,7 +607,7 @@ func TestTransform(t *testing.T) {
 	var p1 Point[float64]
 	var r1 Rectangle[float64]
 	r := Rect(0.0, 0.0, 360.0, 960.0)
-	tr := NewTransform(Rotate000, r)
+	tr := NewTransform(Rot000, r)
 
 	t.Run("Point", func(t *testing.T) {
 		testVect := []struct {
@@ -616,18 +616,18 @@ func TestTransform(t *testing.T) {
 			dir TransfDirection
 			p1  Point[float64]
 		}{
-			{Pt(30.0, 10.0), Rotate000, Base2Sub, Pt(30.0, 10.0)},
-			{Pt(30.0, 10.0), Rotate090, Base2Sub, Pt(950.0, 30.0)},
-			{Pt(30.0, 10.0), Rotate180, Base2Sub, Pt(330.0, 950.0)},
-			{Pt(30.0, 10.0), Rotate270, Base2Sub, Pt(10.0, 330.0)},
+			{Pt(30.0, 10.0), Rot000, Base2Sub, Pt(30.0, 10.0)},
+			{Pt(30.0, 10.0), Rot090, Base2Sub, Pt(950.0, 30.0)},
+			{Pt(30.0, 10.0), Rot180, Base2Sub, Pt(330.0, 950.0)},
+			{Pt(30.0, 10.0), Rot270, Base2Sub, Pt(10.0, 330.0)},
 
-			{Pt(30.0, 10.0), Rotate000, Sub2Base, Pt(30.0, 10.0)},
-			{Pt(30.0, 10.0), Rotate090, Sub2Base, Pt(10.0, 930.0)},
-			{Pt(30.0, 10.0), Rotate180, Sub2Base, Pt(330.0, 950.0)},
-			{Pt(30.0, 10.0), Rotate270, Sub2Base, Pt(350.0, 30.0)},
+			{Pt(30.0, 10.0), Rot000, Sub2Base, Pt(30.0, 10.0)},
+			{Pt(30.0, 10.0), Rot090, Sub2Base, Pt(10.0, 930.0)},
+			{Pt(30.0, 10.0), Rot180, Sub2Base, Pt(330.0, 950.0)},
+			{Pt(30.0, 10.0), Rot270, Sub2Base, Pt(350.0, 30.0)},
 
-			{Pt(0.0, 0.0), Rotate180, Sub2Base, Pt(360.0, 960.0)},
-			{Pt(-10.0, -10.0), Rotate180, Sub2Base, Pt(370.0, 970.0)},
+			{Pt(0.0, 0.0), Rot180, Sub2Base, Pt(360.0, 960.0)},
+			{Pt(-10.0, -10.0), Rot180, Sub2Base, Pt(370.0, 970.0)},
 		}
 		for _, rec := range testVect {
 			tr.Rot = rec.rot
@@ -645,25 +645,25 @@ func TestTransform(t *testing.T) {
 			dir TransfDirection
 			r1  Rectangle[float64]
 		}{
-			{Rect(0.0, 0.0, 360.0, 960.0), Rotate000, Base2Sub, Rect(0.0, 0.0, 360.0, 960.0)},
-			{Rect(0.0, 0.0, 360.0, 960.0), Rotate090, Base2Sub, Rect(0.0, 0.0, 960.0, 360.0)},
-			{Rect(0.0, 0.0, 360.0, 960.0), Rotate180, Base2Sub, Rect(0.0, 0.0, 360.0, 960.0)},
-			{Rect(0.0, 0.0, 360.0, 960.0), Rotate270, Base2Sub, Rect(0.0, 0.0, 960.0, 360.0)},
+			{Rect(0.0, 0.0, 360.0, 960.0), Rot000, Base2Sub, Rect(0.0, 0.0, 360.0, 960.0)},
+			{Rect(0.0, 0.0, 360.0, 960.0), Rot090, Base2Sub, Rect(0.0, 0.0, 960.0, 360.0)},
+			{Rect(0.0, 0.0, 360.0, 960.0), Rot180, Base2Sub, Rect(0.0, 0.0, 360.0, 960.0)},
+			{Rect(0.0, 0.0, 360.0, 960.0), Rot270, Base2Sub, Rect(0.0, 0.0, 960.0, 360.0)},
 
-			{Rect(0.0, 0.0, 360.0, 960.0), Rotate000, Sub2Base, Rect(0.0, 0.0, 360.0, 960.0)},
-			{Rect(0.0, 0.0, 960.0, 360.0), Rotate090, Sub2Base, Rect(0.0, 0.0, 360.0, 960.0)},
-			{Rect(0.0, 0.0, 360.0, 960.0), Rotate180, Sub2Base, Rect(0.0, 0.0, 360.0, 960.0)},
-			{Rect(0.0, 0.0, 960.0, 360.0), Rotate270, Sub2Base, Rect(0.0, 0.0, 360.0, 960.0)},
+			{Rect(0.0, 0.0, 360.0, 960.0), Rot000, Sub2Base, Rect(0.0, 0.0, 360.0, 960.0)},
+			{Rect(0.0, 0.0, 960.0, 360.0), Rot090, Sub2Base, Rect(0.0, 0.0, 360.0, 960.0)},
+			{Rect(0.0, 0.0, 360.0, 960.0), Rot180, Sub2Base, Rect(0.0, 0.0, 360.0, 960.0)},
+			{Rect(0.0, 0.0, 960.0, 360.0), Rot270, Sub2Base, Rect(0.0, 0.0, 360.0, 960.0)},
 
-			{Rect(30.0, 10.0, 40.0, 20.0), Rotate000, Base2Sub, Rect(30.0, 10.0, 40.0, 20.0)},
-			{Rect(30.0, 10.0, 40.0, 20.0), Rotate090, Base2Sub, Rect(940.0, 30.0, 950.0, 40.0)},
-			{Rect(30.0, 10.0, 40.0, 20.0), Rotate180, Base2Sub, Rect(320.0, 940.0, 330.0, 950.0)},
-			{Rect(30.0, 10.0, 40.0, 20.0), Rotate270, Base2Sub, Rect(10.0, 320.0, 20.0, 330.0)},
+			{Rect(30.0, 10.0, 40.0, 20.0), Rot000, Base2Sub, Rect(30.0, 10.0, 40.0, 20.0)},
+			{Rect(30.0, 10.0, 40.0, 20.0), Rot090, Base2Sub, Rect(940.0, 30.0, 950.0, 40.0)},
+			{Rect(30.0, 10.0, 40.0, 20.0), Rot180, Base2Sub, Rect(320.0, 940.0, 330.0, 950.0)},
+			{Rect(30.0, 10.0, 40.0, 20.0), Rot270, Base2Sub, Rect(10.0, 320.0, 20.0, 330.0)},
 
-			{Rect(30.0, 10.0, 40.0, 20.0), Rotate000, Sub2Base, Rect(30.0, 10.0, 40.0, 20.0)},
-			{Rect(30.0, 10.0, 40.0, 20.0), Rotate090, Sub2Base, Rect(10.0, 920.0, 20.0, 930.0)},
-			{Rect(30.0, 10.0, 40.0, 20.0), Rotate180, Sub2Base, Rect(320.0, 940.0, 330.0, 950.0)},
-			{Rect(30.0, 10.0, 40.0, 20.0), Rotate270, Sub2Base, Rect(340.0, 30.0, 350.0, 40.0)},
+			{Rect(30.0, 10.0, 40.0, 20.0), Rot000, Sub2Base, Rect(30.0, 10.0, 40.0, 20.0)},
+			{Rect(30.0, 10.0, 40.0, 20.0), Rot090, Sub2Base, Rect(10.0, 920.0, 20.0, 930.0)},
+			{Rect(30.0, 10.0, 40.0, 20.0), Rot180, Sub2Base, Rect(320.0, 940.0, 330.0, 950.0)},
+			{Rect(30.0, 10.0, 40.0, 20.0), Rot270, Sub2Base, Rect(340.0, 30.0, 350.0, 40.0)},
 		}
 		for _, rec := range testVect {
 			tr.Rot = rec.rot
@@ -680,7 +680,7 @@ func BenchmarkTransform(b *testing.B) {
 	rnd := rand.New(seed)
 
 	r := Rect(0.0, 0.0, Width, Height)
-	tr := NewTransform(Rotate090, r)
+	tr := NewTransform(Rot090, r)
 
 	p0 = Pt(Width*rnd.Float64(), Height*rnd.Float64())
 	x0, y0 := Width*rnd.Float64(), Height*rnd.Float64()

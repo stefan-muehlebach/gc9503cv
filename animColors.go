@@ -15,12 +15,12 @@ var (
 )
 
 type GoColorAnim struct {
-	eventHandlerEmbed
+	// eventHandlerEmbed
 	windowEmbed
-	t0             time.Time
-	patIdx int
-	isManual bool
-	colorList      []string
+	t0        time.Time
+	patIdx    int
+	isManual  bool
+	colorList []string
 }
 
 func NewGoColorAnimation(bounds geom.Rectangle[int]) *GoColorAnim {
@@ -30,7 +30,10 @@ func NewGoColorAnimation(bounds geom.Rectangle[int]) *GoColorAnim {
 	a.patIdx = 0
 	a.colorList = colors.Groups[colors.GoColors]
 
-	a.SetOnClick(func(ev MouseEvent) {
+	a.Root = NewGroup()
+	a.Root.SetSize(bounds.ToFloat().Size())
+
+	a.Root.SetOnClick(func(ev InputEvent) {
 		if ev.Button.IsSet(LeftButton) {
 			a.isManual = true
 			a.patIdx = (a.patIdx + 1) % NumPattern
@@ -159,4 +162,3 @@ var (
 
 	NumPattern = len(DrawerList)
 )
-

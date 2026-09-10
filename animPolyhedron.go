@@ -16,13 +16,13 @@ const (
 )
 
 type PolyhedronAnim struct {
-	eventHandlerEmbed
+	// eventHandlerEmbed
 	windowEmbed
-	m0                            Matrix
-	objList                       []Object3D
-	alpha, dAlpha, beta, dBeta    float64
-	zoom float64
-	isManual bool
+	m0                         Matrix
+	objList                    []Object3D
+	alpha, dAlpha, beta, dBeta float64
+	zoom                       float64
+	isManual                   bool
 }
 
 func NewPolyhedronAnimation(bounds geom.Rectangle[int],
@@ -39,6 +39,9 @@ func NewPolyhedronAnimation(bounds geom.Rectangle[int],
 	if numDots <= 0 {
 		numDots = defNumDots
 	}
+
+	a.Root = NewGroup()
+	a.Root.SetSize(bounds.ToFloat().Size())
 
 	mp := rect.Center()
 	zero := NewVector(0.0, 0.0, 0.0)
@@ -60,42 +63,42 @@ func NewPolyhedronAnimation(bounds geom.Rectangle[int],
 		colors.GoAqua, colors.GoFuchsia, colors.GoLightBlue}
 
 	for i, solid := range objectList {
-		angle := float64(i)*(2.0*math.Pi/5.0)
+		angle := float64(i) * (2.0 * math.Pi / 5.0)
 		dx := ex.Mul(150.0 * math.Sin(angle))
 		dy := ey.Mul(150.0 * math.Cos(angle))
 		v := dx.Add(dy)
-	
+
 		obj = NewPolyhedron(solid, v, 50.0, colorList[i], 3.0)
 		obj.DrawStyle = drawStyle
 		a.objList = append(a.objList, obj)
 	}
 
-/*
-	obj = NewPolyhedron(Tetraeder, ey.Neg().Mul(450.0), 50.0,
-		colors.GoGopherBlue, 3.0)
-	obj.DrawStyle = drawStyle
-	a.objList = append(a.objList, obj)
+	/*
+		obj = NewPolyhedron(Tetraeder, ey.Neg().Mul(450.0), 50.0,
+			colors.GoGopherBlue, 3.0)
+		obj.DrawStyle = drawStyle
+		a.objList = append(a.objList, obj)
 
-	obj = NewPolyhedron(Hexaeder, ey.Neg().Mul(300.0), 30.0,
-		colors.GoYellow, 3.0)
-	obj.DrawStyle = drawStyle
-	a.objList = append(a.objList, obj)
+		obj = NewPolyhedron(Hexaeder, ey.Neg().Mul(300.0), 30.0,
+			colors.GoYellow, 3.0)
+		obj.DrawStyle = drawStyle
+		a.objList = append(a.objList, obj)
 
-	obj = NewPolyhedron(Oktaeder, ey.Neg().Mul(150.0), 50.0,
-		colors.GoAqua, 3.0)
-	obj.DrawStyle = drawStyle
-	a.objList = append(a.objList, obj)
+		obj = NewPolyhedron(Oktaeder, ey.Neg().Mul(150.0), 50.0,
+			colors.GoAqua, 3.0)
+		obj.DrawStyle = drawStyle
+		a.objList = append(a.objList, obj)
 
-	obj = NewPolyhedron(Ikosaeder, ey.Mul(150.0), 50.0,
-		colors.GoFuchsia, 3.0)
-	obj.DrawStyle = drawStyle
-	a.objList = append(a.objList, obj)
+		obj = NewPolyhedron(Ikosaeder, ey.Mul(150.0), 50.0,
+			colors.GoFuchsia, 3.0)
+		obj.DrawStyle = drawStyle
+		a.objList = append(a.objList, obj)
 
-	obj = NewPolyhedron(Dodekaeder, ey.Mul(300.0), 50.0,
-		colors.GoLightBlue, 3.0)
-	obj.DrawStyle = drawStyle
-	a.objList = append(a.objList, obj)
-*/
+		obj = NewPolyhedron(Dodekaeder, ey.Mul(300.0), 50.0,
+			colors.GoLightBlue, 3.0)
+		obj.DrawStyle = drawStyle
+		a.objList = append(a.objList, obj)
+	*/
 
 	//obj = NewPolyhedron(Staircube, ey.Mul(100.0), 50.0,
 	//	colors.GoWhite, 3.0)
@@ -116,29 +119,22 @@ func NewPolyhedronAnimation(bounds geom.Rectangle[int],
 
 	var lastPos Point
 
-	a.SetOnPress(func(ev MouseEvent) {
+	a.Root.SetOnPress(func(ev InputEvent) {
 		a.isManual = true
 		lastPos = ev.Pos
 	})
-	a.SetOnDrag(func(ev MouseEvent) {
+	a.Root.SetOnDrag(func(ev InputEvent) {
 		dPos := ev.Pos.Sub(lastPos)
 		a.beta += math.Pi * (dPos.X / 300.0)
 		a.alpha += math.Pi * (dPos.Y / 300.0)
 		lastPos = ev.Pos
 	})
-	a.SetOnWheel(func(ev MouseEvent) {
+	a.Root.SetOnWheel(func(ev InputEvent) {
 		a.zoom = float64(ev.Wheel) / 10.0
 	})
 
 	return a
 }
-
-/*
-func (a *PolyhedronAnim) OnInputEvent(ev MouseEvent) {
-    log.Printf("type: %s", ev.Type)
-	a.CallEventHandler(ev)
-}
-*/
 
 func (a *PolyhedronAnim) Init() {
 	a.alpha = 0.0 // math.Pi / 12.0
@@ -197,6 +193,7 @@ type Node3D interface {
 }
 
 type AxisType int
+
 const (
 	XAxis AxisType = iota
 	YAxis
@@ -351,20 +348,20 @@ var (
 
 	Ikosaeder = ObjectData{
 		Points: []Vector{
-			Vector{0.0, -a3, -c3},	// 0
-			Vector{0.0, a3, -c3},   // 1
-			Vector{-c3, 0.0, -a3},	// 2
-			Vector{c3, 0.0, -a3},	// 3
+			Vector{0.0, -a3, -c3}, // 0
+			Vector{0.0, a3, -c3},  // 1
+			Vector{-c3, 0.0, -a3}, // 2
+			Vector{c3, 0.0, -a3},  // 3
 
-			Vector{-a3, -c3, 0.0},	// 4
-			Vector{a3, -c3, 0.0},	// 5
-			Vector{a3, c3, 0.0},	// 6
-			Vector{-a3, c3, 0.0},	// 7
+			Vector{-a3, -c3, 0.0}, // 4
+			Vector{a3, -c3, 0.0},  // 5
+			Vector{a3, c3, 0.0},   // 6
+			Vector{-a3, c3, 0.0},  // 7
 
-			Vector{-c3, 0.0, a3},	// 8
-			Vector{c3, 0.0, a3},	// 9
-			Vector{0.0, -a3, c3},	// 10
-			Vector{0.0, a3, c3},	// 11
+			Vector{-c3, 0.0, a3}, // 8
+			Vector{c3, 0.0, a3},  // 9
+			Vector{0.0, -a3, c3}, // 10
+			Vector{0.0, a3, c3},  // 11
 		},
 		Edges: [][]int{
 			{0, 1, 2, 0, 3, 1},
@@ -410,26 +407,26 @@ var (
 
 	Dodekaeder = ObjectData{
 		Points: []Vector{
-			Vector{a4, 0, -b4},		// 0
-			Vector{-a4, 0, -b4},	// 1
-			Vector{c4, c4, -c4},	// 2
-			Vector{-c4, c4, -c4},	// 3
-			Vector{-c4, -c4, -c4},	// 4
-			Vector{c4, -c4, -c4},	// 5
-			Vector{0, b4, -a4},		// 6
-			Vector{0, -b4, -a4},	// 7
-			Vector{b4, -a4, 0},		// 8
-			Vector{b4, a4, 0},		// 9
-			Vector{-b4, a4, 0},		// 10
-			Vector{-b4, -a4, 0},	// 11
-			Vector{0, b4, a4},		// 12
-			Vector{0, -b4, a4},		// 13
-			Vector{c4, c4, c4},		// 14
-			Vector{-c4, c4, c4},	// 15
-			Vector{-c4, -c4, c4},	// 16
-			Vector{c4, -c4, c4},	// 17
-			Vector{a4, 0, b4},		// 18
-			Vector{-a4, 0, b4},		// 19
+			Vector{a4, 0, -b4},    // 0
+			Vector{-a4, 0, -b4},   // 1
+			Vector{c4, c4, -c4},   // 2
+			Vector{-c4, c4, -c4},  // 3
+			Vector{-c4, -c4, -c4}, // 4
+			Vector{c4, -c4, -c4},  // 5
+			Vector{0, b4, -a4},    // 6
+			Vector{0, -b4, -a4},   // 7
+			Vector{b4, -a4, 0},    // 8
+			Vector{b4, a4, 0},     // 9
+			Vector{-b4, a4, 0},    // 10
+			Vector{-b4, -a4, 0},   // 11
+			Vector{0, b4, a4},     // 12
+			Vector{0, -b4, a4},    // 13
+			Vector{c4, c4, c4},    // 14
+			Vector{-c4, c4, c4},   // 15
+			Vector{-c4, -c4, c4},  // 16
+			Vector{c4, -c4, c4},   // 17
+			Vector{a4, 0, b4},     // 18
+			Vector{-a4, 0, b4},    // 19
 		},
 		Edges: [][]int{
 			{0, 1, 4, 7, 5, 0, 2, 6, 3, 1},
@@ -467,138 +464,138 @@ var (
 
 	Cross = ObjectData{
 		Points: []Vector{
-			Vector{-b5, -c5, -d5},	// 0
-			Vector{-b5, c5, -d5},	// 1
-			Vector{-c5, c5, -d5},	// 2
-			Vector{-c5, b5, -d5},	// 3
-			Vector{c5, b5, -d5},	// 4
-			Vector{c5, c5, -d5},	// 5
-			Vector{b5, c5, -d5},	// 6
-			Vector{b5, -c5, -d5},	// 7
-			Vector{c5, -c5, -d5},	// 8
-			Vector{c5, -b5, -d5},	// 9
-			Vector{-c5, -b5, -d5},	// 10
-			Vector{-c5, -c5, -d5},	// 11
+			Vector{-b5, -c5, -d5}, // 0
+			Vector{-b5, c5, -d5},  // 1
+			Vector{-c5, c5, -d5},  // 2
+			Vector{-c5, b5, -d5},  // 3
+			Vector{c5, b5, -d5},   // 4
+			Vector{c5, c5, -d5},   // 5
+			Vector{b5, c5, -d5},   // 6
+			Vector{b5, -c5, -d5},  // 7
+			Vector{c5, -c5, -d5},  // 8
+			Vector{c5, -b5, -d5},  // 9
+			Vector{-c5, -b5, -d5}, // 10
+			Vector{-c5, -c5, -d5}, // 11
 
-			Vector{-b5, -c5, d5},	// 12
-			Vector{-b5, c5, d5},	// 13
-			Vector{-c5, c5, d5},	// 14
-			Vector{-c5, b5, d5},	// 15
-			Vector{c5, b5, d5},		// 16
-			Vector{c5, c5, d5},		// 17
-			Vector{b5, c5, d5},		// 18
-			Vector{b5, -c5, d5},	// 19
-			Vector{c5, -c5, d5},	// 20
-			Vector{c5, -b5, d5},	// 21
-			Vector{-c5, -b5, d5},	// 22
-			Vector{-c5, -c5, d5},	// 23
+			Vector{-b5, -c5, d5}, // 12
+			Vector{-b5, c5, d5},  // 13
+			Vector{-c5, c5, d5},  // 14
+			Vector{-c5, b5, d5},  // 15
+			Vector{c5, b5, d5},   // 16
+			Vector{c5, c5, d5},   // 17
+			Vector{b5, c5, d5},   // 18
+			Vector{b5, -c5, d5},  // 19
+			Vector{c5, -c5, d5},  // 20
+			Vector{c5, -b5, d5},  // 21
+			Vector{-c5, -b5, d5}, // 22
+			Vector{-c5, -c5, d5}, // 23
 
-			Vector{-c5, c5, -b5},	// 24
-			Vector{c5, c5, -b5},	// 25
-			Vector{c5, -c5, -b5},	// 26
-			Vector{-c5, -c5, -b5},	// 27
+			Vector{-c5, c5, -b5},  // 24
+			Vector{c5, c5, -b5},   // 25
+			Vector{c5, -c5, -b5},  // 26
+			Vector{-c5, -c5, -b5}, // 27
 
-			Vector{-c5, c5, b5},	// 28
-			Vector{c5, c5, b5},		// 29
-			Vector{c5, -c5, b5},	// 30
-			Vector{-c5, -c5, b5},	// 31
+			Vector{-c5, c5, b5},  // 28
+			Vector{c5, c5, b5},   // 29
+			Vector{c5, -c5, b5},  // 30
+			Vector{-c5, -c5, b5}, // 31
 		},
 		Edges: [][]int{
 			// Entlang X-Achse
 			{0, 1, 6, 7, 0}, {12, 13, 18, 19, 12}, {0, 12}, {1, 13}, {6, 18},
-				{7, 19},
+			{7, 19},
 			// Entlang Y-Achse
 			{3, 4, 9, 10, 3}, {15, 16, 21, 22, 15}, {3, 15}, {4, 16}, {9, 21},
-				{10, 22},
+			{10, 22},
 			// Entlang Z-Achse
 			{24, 25, 29, 28, 24}, {26, 27, 31, 30, 26}, {25, 26}, {24, 27},
-				{29, 30}, {28, 31},
+			{29, 30}, {28, 31},
 		},
 		Faces: [][]int{
 			// Untere Kreuzflaeche
 			{0, 1, 2, 11}, {2, 3, 4, 5}, {5, 6, 7, 8}, {8, 9, 10, 11},
 			// Obere Kreuzflaeche
 			{12, 23, 14, 13}, {14, 17, 16, 15}, {17, 20, 19, 18},
-				 {20, 23, 22, 21},
+			{20, 23, 22, 21},
 			// Seitliche Begrenzungsflaechen
 			{1, 0, 12, 13}, {2, 1, 13, 14}, {3, 2, 14, 15}, {4, 3, 15, 16},
-				{5, 4, 16, 17}, {6, 5, 17, 18}, {7, 6, 18, 19}, {8, 7, 19, 20},
-				{9, 8, 20, 21}, {10, 9, 21, 22}, {11, 10, 22, 23},
-				{0, 11, 23, 12},
+			{5, 4, 16, 17}, {6, 5, 17, 18}, {7, 6, 18, 19}, {8, 7, 19, 20},
+			{9, 8, 20, 21}, {10, 9, 21, 22}, {11, 10, 22, 23},
+			{0, 11, 23, 12},
 			// Unterer Turm
 			{2, 24, 27, 11}, {2, 5, 25, 24}, {5, 8, 26, 25}, {8, 11, 27, 26},
-				{24, 25, 26, 27},
+			{24, 25, 26, 27},
 			// Oberer Turn
 			{14, 23, 31, 28}, {17, 14, 28, 29}, {20, 17, 29, 30},
-				{23, 20, 30, 31}, {28, 31, 30, 29},
+			{23, 20, 30, 31}, {28, 31, 30, 29},
 		},
 	}
 
 	// Staircube
 	Staircube = ObjectData{
 		Points: []Vector{
-			Vector{0, 0, 0},		// 0
-			Vector{1, 0, 0},		// 1
-			Vector{1, 1, 0},		// 2
-			Vector{0, 1, 0},		// 3
+			Vector{0, 0, 0}, // 0
+			Vector{1, 0, 0}, // 1
+			Vector{1, 1, 0}, // 2
+			Vector{0, 1, 0}, // 3
 
-			Vector{1, 0, 0.2},		// 4
-			Vector{1, 1, 0.2},		// 5
-			Vector{0, 1, 0.2},		// 6
+			Vector{1, 0, 0.2}, // 4
+			Vector{1, 1, 0.2}, // 5
+			Vector{0, 1, 0.2}, // 6
 
-			Vector{0.8, 0, 0.2},	// 7
-			Vector{0.8, 0.8, 0.2},	// 8
-			Vector{0, 0.8, 0.2},	// 9
+			Vector{0.8, 0, 0.2},   // 7
+			Vector{0.8, 0.8, 0.2}, // 8
+			Vector{0, 0.8, 0.2},   // 9
 
-			Vector{0.8, 0, 0.4},	// 10
-			Vector{0.8, 0.8, 0.4},	// 11
-			Vector{0, 0.8, 0.4},	// 12
+			Vector{0.8, 0, 0.4},   // 10
+			Vector{0.8, 0.8, 0.4}, // 11
+			Vector{0, 0.8, 0.4},   // 12
 
-			Vector{0.6, 0, 0.4},	// 13
-			Vector{0.6, 0.6, 0.4},	// 14
-			Vector{0, 0.6, 0.4},	// 15
+			Vector{0.6, 0, 0.4},   // 13
+			Vector{0.6, 0.6, 0.4}, // 14
+			Vector{0, 0.6, 0.4},   // 15
 
-			Vector{0.6, 0, 0.6},	// 16
+			Vector{0.6, 0, 0.6}, // 16
 			Vector{0.6, 0.6, 0.6},
 			Vector{0, 0.6, 0.6},
 
-			Vector{0.4, 0, 0.6},	// 19
+			Vector{0.4, 0, 0.6}, // 19
 			Vector{0.4, 0.4, 0.6},
 			Vector{0, 0.4, 0.6},
 
-			Vector{0.4, 0, 0.8},	// 22
+			Vector{0.4, 0, 0.8}, // 22
 			Vector{0.4, 0.4, 0.8},
 			Vector{0, 0.4, 0.8},
 
-			Vector{0.2, 0, 0.8},	// 25
+			Vector{0.2, 0, 0.8}, // 25
 			Vector{0.2, 0.2, 0.8},
 			Vector{0, 0.2, 0.8},
 
-			Vector{0.2, 0, 1.0},	// 28
+			Vector{0.2, 0, 1.0}, // 28
 			Vector{0.2, 0.2, 1.0},
 			Vector{0, 0.2, 1.0},
 
-			Vector{0, 0, 1.0},		// 31
+			Vector{0, 0, 1.0}, // 31
 		},
 		Edges: [][]int{
-			{0,1,2,3,0},
-			{4,5,6}, {7,8,9}, {10,11,12}, {13,14,15}, {16,17,18}, {19,20,21},
-				{22,23,24}, {25,26,27}, {28,29,30,31,28},
+			{0, 1, 2, 3, 0},
+			{4, 5, 6}, {7, 8, 9}, {10, 11, 12}, {13, 14, 15}, {16, 17, 18}, {19, 20, 21},
+			{22, 23, 24}, {25, 26, 27}, {28, 29, 30, 31, 28},
 		},
 		Faces: [][]int{
-			{0,3,2,1},
-			{1,2,5,4}, {2,3,6,5},
-			{4,5,6,9,8,7},
-			{7,8,11,10}, {8,9,12,11},
-			{10,11,12,15,14,13},
-			{13,14,17,16}, {14,15,18,17},
-			{16,17,18,21,20,19},
-			{19,20,23,22}, {20,21,24,23},
-			{22,23,24,27,26,25},
-			{25,26,29,28}, {26,27,30,29},
-			{28,29,30,31,28},
-			{0,1,4,7,10,13,16,19,22,25,28,31},
-			{0,31,30,27,24,21,18,15,12,9,6,3},
+			{0, 3, 2, 1},
+			{1, 2, 5, 4}, {2, 3, 6, 5},
+			{4, 5, 6, 9, 8, 7},
+			{7, 8, 11, 10}, {8, 9, 12, 11},
+			{10, 11, 12, 15, 14, 13},
+			{13, 14, 17, 16}, {14, 15, 18, 17},
+			{16, 17, 18, 21, 20, 19},
+			{19, 20, 23, 22}, {20, 21, 24, 23},
+			{22, 23, 24, 27, 26, 25},
+			{25, 26, 29, 28}, {26, 27, 30, 29},
+			{28, 29, 30, 31, 28},
+			{0, 1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31},
+			{0, 31, 30, 27, 24, 21, 18, 15, 12, 9, 6, 3},
 		},
 	}
 
@@ -845,7 +842,7 @@ func (f *Face) Draw(gc *gg.Context) {
 	}
 	gc.SetLineWidth(f.LineWidth)
 	gc.SetLineColor(f.LineColor)
-	gc.SetFillColor(f.FillColor.Dark((1.0 - f.NormT.Z/f.NormT.Abs())/2.0))
+	gc.SetFillColor(f.FillColor.Dark((1.0 - f.NormT.Z/f.NormT.Abs()) / 2.0))
 	gc.MoveTo(f.o.PtsT[f.Idx[0]].X, f.o.PtsT[f.Idx[0]].Y)
 	for _, idx := range f.Idx[1:] {
 		gc.LineTo(f.o.PtsT[idx].X, f.o.PtsT[idx].Y)
@@ -865,9 +862,9 @@ func (f *Face) Draw(gc *gg.Context) {
 //-----------------------------------------------------------------------
 
 type Dot struct {
-	Pt, PtT    Vector
-	Color      colors.RGBA
-	Size       float64
+	Pt, PtT Vector
+	Color   colors.RGBA
+	Size    float64
 }
 
 func NewDot(x, y, z float64, color colors.RGBA, size float64) *Dot {

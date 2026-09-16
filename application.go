@@ -119,8 +119,8 @@ func (n *nodeEmbed) Draw(gc *gg.Context) {
 
 const (
 	cornerRadius         =  6.0
-	minWidth             = 36.0
-	minHeight            = 36.0
+	buttonWidth          = 36.0
+	buttonHeight         = 36.0
 
 	borderWidth          =  0.0
 	lineWidth            =  2.5
@@ -129,6 +129,7 @@ const (
 
 	padding              =  5.0
 	innerPadding         =  5.0
+	buttonInnerPadding   = 15.0
 
 	buttonFontSize       = 12.0
 	radioboxFontSize     = 12.0
@@ -137,6 +138,7 @@ const (
 	radioboxHeight       = 20.0
 	radioboxInnerPadding =  5.0
 	radioboxCornerRadius =  5.0
+	checkboxLineWidth    =  5.0
 	radiobuttonLineWidth =  8.0
 )
 
@@ -233,10 +235,11 @@ type TextButton struct {
 func NewTextButton(label string) *TextButton {
 	b := &TextButton{}
 	b.Init(b)
-	b.SetMinSize(Point{minWidth, minHeight})
 	b.label = label
 	b.align = AlignCenter | AlignMiddle
 	b.ax, b.ay = 0.5, 0.5
+	w := float64(font.MeasureString(buttonFontFace, b.label))/64.0
+	b.SetMinSize(Point{w+2*buttonInnerPadding, buttonHeight})
 	return b
 }
 
@@ -343,7 +346,7 @@ func (b *Radiobox) Draw(gc *gg.Context) {
 	gc.FillStroke()
 	if b.checked {
 		if b.typ == Checkbox {
-			gc.SetLineWidth(lineWidth)
+			gc.SetLineWidth(checkboxLineWidth)
 			if b.pushed {
 				gc.SetLineColor(pushedLineColor)
 			} else {

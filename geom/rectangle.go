@@ -108,6 +108,11 @@ func (r Rectangle[T]) Center() Point[T] {
 func (r Rectangle[T]) RelPos(rx, ry float64) Point[T] {
 	return r.Min.AddXY(T(rx*float64(r.Dx())), T(ry*float64(r.Dy())))
 }
+func (r Rectangle[T]) PosRel(p Point[T]) (rx, ry float64) {
+	w, h := r.Max.X-r.Min.X, r.Max.Y-r.Min.Y
+	p = p.Sub(r.Min)
+	return float64(p.X) / float64(w), float64(p.Y) / float64(h)
+}
 
 func (r Rectangle[T]) Intersect(s Rectangle[T]) Rectangle[T] {
 	if r.Empty() {

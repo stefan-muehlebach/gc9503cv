@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	BackgroundColor = colors.DimGray.Dark(0.6)
+	BackColor = colors.DimGray.Dark(0.6)
 )
 
 type GoColorAnim struct {
@@ -68,7 +68,7 @@ func (a *GoColorAnim) Update(dt time.Duration) {
 }
 
 func (a *GoColorAnim) Refresh() {
-	a.gc.Clear(BackgroundColor)
+	a.gc.Clear(BackColor)
 	idx := 0
 	for row := range a.bounds.Dy() / 60 {
 		y := float64(row * 60)
@@ -105,7 +105,7 @@ var (
 			gc.SetFillColor(col)
 			gc.DrawRectangle(x, y, 60.0, 60.0)
 			gc.Fill()
-			gc.SetFillColor(BackgroundColor)
+			gc.SetFillColor(BackColor)
 			gc.DrawCircle(x+30.0, y+30.0, 30.0-1.0)
 			gc.Fill()
 		},
@@ -113,7 +113,7 @@ var (
 			gc.SetFillColor(col)
 			gc.DrawCircle(x+30.0, y+30.0, 30.0)
 			gc.Fill()
-			gc.SetFillColor(BackgroundColor)
+			gc.SetFillColor(BackColor)
 			gc.DrawCircle(x+30.0, y+30.0, 30.0-15.0)
 			gc.Fill()
 		},
@@ -122,7 +122,7 @@ var (
 				gc.SetFillColor(col)
 				gc.DrawCircle(x+30.0, y+30.0, rad)
 				gc.Fill()
-				gc.SetFillColor(BackgroundColor)
+				gc.SetFillColor(BackColor)
 				gc.DrawCircle(x+30.0, y+30.0, rad-5.0)
 				gc.Fill()
 			}

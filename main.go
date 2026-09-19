@@ -12,6 +12,7 @@ import (
 	"periph.io/x/host/v3"
 
 	"github.com/stefan-muehlebach/gc9503cv/geom"
+	"github.com/stefan-muehlebach/gc9503cv/props"
 )
 
 //----------------------------------------------------------------------------
@@ -68,6 +69,8 @@ func main() {
 	flag.DurationVar(&timeout, "timeout", 10*time.Second,
 		"Duration (for animations)")
 	flag.Parse()
+
+	log.Printf("PropsMap: %v\n", props.PropsMap)
 
 	if _, err := host.Init(); err != nil {
 		log.Fatalf("host.Init(): %v", err)

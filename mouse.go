@@ -5,6 +5,7 @@ import (
 	//"image/draw"
 	"log"
 	"time"
+
 	//"fmt"
 	"github.com/holoplot/go-evdev"
 	"github.com/stefan-muehlebach/gc9503cv/geom"
@@ -283,6 +284,7 @@ func (m *Mouse) processEvents() {
 				}
 				mev.Type = WheelEvent
 				mev.Wheel = m.Wheel
+				mev.WheelRel = int(e.Value)
 				mev.Time = time.Now()
 				m.enqueueEvent(mev)
 			default:
@@ -358,4 +360,5 @@ type InputEvent struct {
 	Button         MouseButtonType
 	LongPressed    bool
 	Wheel          int
+	WheelRel       int
 }

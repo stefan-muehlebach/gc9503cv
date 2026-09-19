@@ -1,10 +1,14 @@
 package main
 
 import (
+	"fmt"
+	"log"
+	"math"
+
+	"github.com/stefan-muehlebach/gc9503cv/binding"
 	"github.com/stefan-muehlebach/gc9503cv/geom"
 	"github.com/stefan-muehlebach/gg"
 	"github.com/stefan-muehlebach/gg/colors"
-	"log"
 )
 
 type GUI struct {
@@ -27,15 +31,15 @@ func NewGUI(bounds geom.Rectangle[int]) *GUI {
 	log.Printf("main.Bounds()       : %v", main.Bounds())
 	log.Printf("main.Bounds().Size(): %v", main.Bounds().Size())
 
-/*
-	btn1 := NewButton(24, 24)
-	btn2 := NewButton(32, 32)
-	btn3 := NewButton(48, 48)
-	btn4 := NewButton(64, 64)
-	btn5 := NewButton(96, 96)
+	/*
+		btn1 := NewButton(24, 24)
+		btn2 := NewButton(32, 32)
+		btn3 := NewButton(48, 48)
+		btn4 := NewButton(64, 64)
+		btn5 := NewButton(96, 96)
 
-	main.Add(btn1, btn2, btn3, btn4, btn5, NewSpacer())
-*/
+		main.Add(btn1, btn2, btn3, btn4, btn5, NewSpacer())
+	*/
 
 	// Toolbar with IconButtons
 	//
@@ -88,6 +92,51 @@ func NewGUI(bounds geom.Rectangle[int]) *GUI {
 	btnGroup.Add(btnA, btnB, NewSpacer(), btnC)
 	main.Add(btnGroup)
 
+	lblGroup := NewGroup()
+	lblGroup.SetLayoutManager(NewHBoxLayout())
+	lbl1 := NewLabel("Äggè")
+	lbl2 := NewLabel("Stefan")
+	lbl3 := NewLabel("Jamal")
+	lblGroup.Add(lbl1, lbl2, lbl3)
+	main.Add(lblGroup)
+
+	sldGroup := NewGroup()
+	sldGroup.SetLayoutManager(NewHBoxLayout())
+
+	sld1Group := NewGroup()
+	sld1Group.SetLayoutManager(NewVBoxLayout())
+	sldVal := binding.NewFloat()
+	str := binding.FloatToStringWithFormat(sldVal, "%.3f")
+	sld := NewSliderWithData(170, Horizontal, sldVal)
+	sld.SetRange(0.0, 2*math.Pi, math.Pi/36.0)
+	lbl := NewLabelWithData(str)
+	sld1Group.Add(sld, lbl)
+
+	sld2Group := NewGroup()
+	sld2Group.SetLayoutManager(NewVBoxLayout())
+	sldVal = binding.NewFloat()
+	str = binding.FloatToStringWithFormat(sldVal, "%03.f")
+	sld = NewSliderWithData(170, Horizontal, sldVal)
+	sld.SetRange(0, 100, 5)
+	lbl = NewLabelWithData(str)
+	sld2Group.Add(sld, lbl)
+
+	sldGroup.Add(sld1Group, sld2Group)
+	main.Add(sldGroup)
+
+	gridGroup := NewGroup()
+	gridGroup.SetLayoutManager(NewColumnGridLayout(5))
+	for i := range 20 {
+		btn := NewTextButton(fmt.Sprintf("%03d", i))
+		gridGroup.Add(btn)
+	}
+	main.Add(gridGroup)
+
+	//sld1 := NewSlider(150, Horizontal)
+	//sld2 := NewSlider(150, Horizontal)
+	//sld3 := NewSlider(150, Horizontal)
+	//sldGroup.Add(sld1, sld2, sld3)
+	//main.Add(sld1, sld2, sld3)
 
 	return a
 }

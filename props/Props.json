@@ -1,0 +1,292 @@
+[
+	{
+    	"Name": "Default",
+		"ParentName": null,
+
+    	"Colors": {
+    		"FillColor": {
+			    "Name": "Teal"
+    		},
+    		"PushedColor": {
+			    "Name": "Teal", "Bright": 0.6
+    		},
+    		"SelectedColor": {
+			    "Name": "Teal"
+    		},
+    		"BorderColor": {
+			    "Name": "Teal"
+    		},
+    		"PushedBorderColor": {
+			    "Name": "Teal", "Bright": 0.7
+    		},
+    		"SelectedBorderColor": {
+			    "Name": "Teal", "Bright": 0.6
+    		},
+    		"LineColor": {
+    			"Name": "Gainsboro"
+    		},
+    		"PushedLineColor": {
+    			"Name": "Gainsboro"
+    		},
+    		"SelectedLineColor": {
+    			"Name": "Gainsboro"
+    		},
+    		"TextColor": {
+    			"Name": "Gainsboro"
+    		},
+    		"PushedTextColor": {
+    			"Name": "Gainsboro"
+    		},
+    		"SelectedTextColor": {
+    			"Name": "Gainsboro"
+    		},
+    		"BackgroundColor": {
+    			"Name": "Black"
+    		},
+    		"BarColor": {
+    			"Name": "DimGray"
+    		},
+    		"PushedBarColor": {
+    			"Name": "DimGray"
+    		},
+    		"MenuBackgroundColor": {
+    			"Name": "Black"
+    		}
+    	},
+
+    	"Fonts": {
+    		"RegularFont":    "GoRegular",
+    		"BoldFont":       "GoBold",
+    		"ItalicFont":     "GoItalic",
+    		"BoldItalicFont": "GoBoldItalic",
+    		"MonoFont":       "GoMono",
+    		"MonoBoldFont":   "GoMonoBold"
+    	},
+
+    	"Sizes": {
+    		"Width":                0,
+    		"Height":               0,
+    		"BorderWidth":          0,
+    		"PushedBorderWidth":    0,
+    		"SelectedBorderWidth":  3,
+    		"CornerRadius":         6,
+    		"BarSize":              3,
+    		"CtrlSize":            18,
+    		"FieldSize":            0.0,
+    		"LineWidth":            2.5,
+    		"FontSize":            13,
+    		"Padding":             5,
+    		"InnerPadding":        5 
+    	}
+    },
+
+	{
+		"Name": "Panel",
+		"ParentName": "Default",
+		"Colors": {
+		    "FillColor": {
+				"Name": "Black", "Alpha": 0
+			},
+		    "BorderColor": {
+				"Name": "Black", "Alpha": 0
+			}
+		},
+		"Sizes": {
+			"BorderWidth":         0,
+    		"PushedBorderWidth":   0,
+    		"SelectedBorderWidth": 0
+        }
+	},
+
+	{
+		"Name": "TabPanel",
+		"ParentName": "Default",
+	    "Colors": {
+		    "FillColor": {
+			    "Name": "Teal", "Dark": 0.5
+            },
+		    "BorderColor": { "Name": "Black" }
+		},
+		"Sizes": {
+			"BorderWidth":         0,
+    		"PushedBorderWidth":   0,
+    		"SelectedBorderWidth": 0
+		}
+	},
+
+	{
+		"Name": "TabMenu",
+		"ParentName": "TabPanel",
+		"Sizes": {
+			"Height": 25
+		}
+	},
+
+	{
+		"Name": "Layout",
+		"ParentName": "Default",
+		"Sizes": {
+			"Padding": 5
+		}
+	},
+
+	{
+		"Name": "Label",
+		"ParentName": "Default",
+	    "Colors": {
+		    "FillColor": {
+				"Name": "Black", "Alpha": 0.0
+			}
+        }
+    },
+
+	{
+		"Name": "Button",
+        "ParentName": "Default",
+		"Sizes": {
+			"Width":        36,
+			"Height":       36
+		}
+	},
+
+	{
+		"Name": "TextButton",
+        "ParentName": "Button",
+		"Sizes": {
+			"InnerPadding": 15
+		}
+	},
+
+	{
+		"Name": "IconButton",
+		"ParentName": "Button",
+		"Sizes": {
+			"InnerPadding": 5
+		}
+	},
+
+	{
+		"Name": "Radiobox",
+		"ParentName": "Button",
+		"Sizes": {
+			"Width":        20,
+			"Height":       20,
+			"InnerPadding":  5,
+			"CornerRadius":  5
+		}
+	},
+
+	{
+		"Name": "Checkbox",
+		"ParentName": "Radiobox",
+		"Sizes": {
+			"LineWidth":     5
+		}
+	},
+
+	{
+		"Name": "RadioButton",
+		"ParentName": "Radiobox",
+		"Sizes": {
+			"LineWidth":     8
+		}
+	},
+
+	{
+		"Name": "TabButton",
+		"ParentName": "Button",
+	    "Colors": {
+		    "FillColor": { "Name": "Teal" },
+    		"PushedColor": {
+			    "Name": "Teal", "Bright": 0.6
+    		},
+    		"SelectedColor": {
+			    "Name": "Teal", "Bright": 0.4
+    		}
+        },
+    	"Sizes": {
+    		"Width":        30,
+    		"Height":       25,
+    		"BorderWidth":   0,
+    		"SelectedBorderWidth":   0,
+    		"CornerRadius":  0,
+       	 	"InnerPadding": 10
+    	}
+    },
+
+	{
+		"Name": "ListButton",
+		"ParentName": "Button",
+	    "Colors": {
+    		"LineColor": {
+			    "Name": "Teal", "Bright": 0.6
+    		}
+		},
+		"Sizes": {
+			"Width":        45,
+			"InnerPadding": 5
+		}
+	},
+
+	{
+		"Name": "Slider",
+		"ParentName": "Default",
+		"Sizes": {
+			"Width":    20,
+			"Height":   20
+		}
+	},
+
+	{
+		"Name": "Scrollbar",
+		"ParentName": "Default",
+		"Sizes": {
+			"Width":    20,
+			"Height":   20
+		}
+	},
+
+	{
+		"Name": "Shape",
+		"ParentName": "Default",
+		"Colors": {
+        	"FillColor": {
+				"Name": "Black", "Alpha": 0.0
+			},
+        	"PushedColor": {
+				"Name": "Black", "Alpha": 0.0
+			},
+        	"SelectedColor": {
+				"Name": "Black", "Alpha": 0.0
+			},
+        	"BorderColor"        : {"Name": "Black"},
+        	"_PushedBorderColor"  : {"Name": "Black", "Alpha": 0.1},
+        	"_SelectedBorderColor": {"Name": "Black", "Alpha": 0.1}
+    	},
+    	"Sizes": {
+        	"BorderWidth":          2.0,
+        	"_PushedBorderWidth":   10.0,
+        	"_SelectedBorderWidth": 10.0
+    	}
+	},
+
+	{
+		"Name": "Point",
+		"ParentName": "Shape",
+    	"Sizes": {
+        	"Width":  8.0,
+        	"Height": 8.0
+    	}
+	},
+
+	{
+		"Name": "Polygon",
+		"ParentName": "Shape",
+		"Colors": {
+        	"BorderColor" : "0xFAEBD7"
+		},
+    	"Sizes": {
+        	"BorderWidth": 3.5
+    	}
+	}
+]

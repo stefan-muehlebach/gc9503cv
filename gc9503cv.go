@@ -7,24 +7,23 @@ import (
 	"periph.io/x/conn/v3/gpio"
 	"periph.io/x/conn/v3/gpio/gpioreg"
 
+	"github.com/stefan-muehlebach/gc9503cv/framebuffer"
 	"github.com/stefan-muehlebach/gc9503cv/geom"
 	"github.com/stefan-muehlebach/gc9503cv/iliimg"
-	"github.com/stefan-muehlebach/gc9503cv/framebuffer"
 )
 
 // Folgende Eintraege sind in der Datei [config.txt] zu machen, damit der
 // RaspberryPi den GPIO als Display Parallel Interface (DPI) verwendet.
 //
-//   gpio=0-21=a2
+//	gpio=0-21=a2
 //
-//   dtparam=drm_fb2_vc4=on
+//	dtoverlay=vc4-kms-dpi-generic
+//	dtparam=clock-frequency=24000000,rotate=0
+//	dtparam=hactive=480,hsync=5,hbp=20,hfp=20
+//	dtparam=vactive=960,vsync=5,vbp=10,vfp=10
+//	dtparam=width-mm=55,height-mm=147
 //
-//   dtoverlay=vc4-kms-dpi-generic
-//   dtparam=clock-frequency=20000000,rotate=0,rgb666
-//   dtparam=hactive=480,hsync=5,hbp=20,hfp=20
-//   dtparam=vactive=960,vsync=5,vbp=10,vfp=10
-//   dtparam=width-mm=55,height-mm=147
-//
+//	dtoverlay=vc4-kms-v3d
 const (
 	defMOSIPinName = "GPIO23"
 	defSCKPinName  = "GPIO24"
@@ -41,7 +40,7 @@ const (
 type (
 	Point     = geom.Point[float64]
 	Rectangle = geom.Rectangle[float64]
-	Size	  = geom.Point[float64]
+	Size      = geom.Point[float64]
 )
 
 //----------------------------------------------------------------------------
@@ -99,8 +98,8 @@ func Open(rot geom.RotationType) *GC9503CV {
 	d.rst.Out(gpio.High)
 
 	// Oeffnet eine Verbindung zum Device, welches fuer den Framebuffer
-    // steht. Die korrekte Konfiguration des Framebuffers muss beim 
-    // Booten des Systems ueber das Overlay vc4-kms-dpi-generic erfolgen.
+	// steht. Die korrekte Konfiguration des Framebuffers muss beim
+	// Booten des Systems ueber das Overlay vc4-kms-dpi-generic erfolgen.
 	d.fb, err = framebuffer.Open(defFBDevName)
 	if err != nil {
 		log.Fatal("Couldn't open framebuffer")
@@ -133,7 +132,7 @@ func (d *GC9503CV) Init(hwReset bool) {
 	}
 }
 
-// Mit DispBounds werden die Abmessungen des Displays (in Pixeln) als 
+// Mit DispBounds werden die Abmessungen des Displays (in Pixeln) als
 // Rechteck retourniert. Die Werte sind unabhaengig von einer allfaelligen
 // Rotation, da die Rotation nicht hardwareseitig durchgefuehrt werden kann.
 func (d *GC9503CV) DispBounds() geom.Rectangle[int] {
@@ -243,7 +242,7 @@ func (d *GC9503CV) PartialArea(rect image.Rectangle) {
 */
 
 // Mit Matrix kann eine Transformationsmatrix bezogen werden, welche alle
-// Transformationen enthaelt, um Zeichenkoordinaten in Display-Koordianten 
+// Transformationen enthaelt, um Zeichenkoordinaten in Display-Koordianten
 // umzurechnen.
 // TO DO: mit der neuen Transformation in der Funktion Convert des Objektes
 // ILIImage wird diese Transformation eigentlich nicht mehr benoetigt.
@@ -319,20 +318,25 @@ var (
 		{0xAC, []byte{0x45}, 0},
 		{0xA7, []byte{0x47}, 0},
 		{0xA0, []byte{0xCC}, 0},
+		//{0xA0, []byte{0x88}, 0},
 		{0x86, []byte{0x99, 0xA3, 0xA3, 0x31}, 0},
+		//{0x86, []byte{0x99, 0xA3, 0xA3, 0x51}, 0},
 		{0xFA, []byte{0x08, 0x08, 0x00, 0x04}, 0},
 		{0xA3, []byte{0x6E}, 0},
 		{0xFD, []byte{0x28, 0x3C, 0x00}, 0},
 		{0x9A, []byte{0x4a}, 0},
+		//{0x9A, []byte{0x4B}, 0},
 		{0x9B, []byte{0x22}, 0},
+		//{0x9B, []byte{0x4B}, 0},
 		{0x82, []byte{0x00, 0x00}, 0},
-		{0x80, []byte{0x54}, 0},
-		{RGBIFCTL, []byte{0x00, 0x0a, 0x0a, 0x0a, 0x0a}, 0},
-		{DISPCTL, []byte{0x33}, 0},
-		{PIXFMT, []byte{0x60}, 0},
-
+		//{0x82, []byte{0x20, 0x20}, 0},
 		{0x7A, []byte{0x0F, 0x13}, 0},
 		{0x7B, []byte{0x0F, 0x13}, 0},
+		{0x80, []byte{0x54}, 0},
+
+		//{0xB0, []byte{0x00, 0x0a, 0x0a, 0x0a, 0x0a}, 0}, // RGBIFCTL
+		{0xB1, []byte{0x33}, 0}, // DISPCTL
+		{0x3A, []byte{0x60}, 0}, // PIXFMT
 
 		{0x6D, []byte{0x0c, 0x03, 0x1e, 0x02, 0x08, 0x1a, 0x19, 0x03, 0x0d,
 			0x0e, 0x0f, 0x10, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E,

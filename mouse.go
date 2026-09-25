@@ -356,7 +356,7 @@ func (m *Mouse) processEvents() {
 type InputEvent struct {
 	Type           InputEventType
 	Time, InitTime time.Time
-	Pos, InitPos   Point // geom.Point[int]
+	InitPos, Pos   Point // geom.Point[int]
 	Button         MouseButtonType
 	LongPressed    bool
 	Wheel          int

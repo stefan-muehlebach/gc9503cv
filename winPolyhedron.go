@@ -6,7 +6,7 @@ import (
 	"github.com/stefan-muehlebach/gg/colors"
 	//"log"
 	"math"
-	"math/rand/v2"
+	//"math/rand/v2"
 	"slices"
 	"time"
 )
@@ -861,6 +861,7 @@ func (f *Face) Draw(gc *gg.Context) {
 
 //-----------------------------------------------------------------------
 
+/*
 type Dot struct {
 	Pt, PtT Vector
 	Color   colors.RGBA
@@ -889,6 +890,7 @@ func (d *Dot) Draw(gc *gg.Context) {
 	gc.DrawPoint(d.PtT.X, d.PtT.Y, d.Size)
 	gc.Fill()
 }
+*/
 
 //-----------------------------------------------------------------------
 
@@ -925,6 +927,7 @@ func (s *Segment) Draw(gc *gg.Context) {
 
 //-----------------------------------------------------------------------
 
+/*
 func NewCloud(x, y, z, w float64, numObjs int, color colors.RGBA,
 	size float64) []Object3D {
 
@@ -937,6 +940,7 @@ func NewCloud(x, y, z, w float64, numObjs int, color colors.RGBA,
 	}
 	return dots
 }
+*/
 
 //-----------------------------------------------------------------------
 

@@ -3,7 +3,6 @@ package main
 import (
 	"embed"
 	"fmt"
-	"github.com/stefan-muehlebach/gc9503cv/geom"
 	"image"
 	_ "image/png"
 	"io/fs"
@@ -11,35 +10,37 @@ import (
 	"path"
 	"regexp"
 	"strconv"
+
+	"github.com/stefan-muehlebach/gc9503cv/geom"
 )
 
 const (
-	cursorDir = "cursors"
+	cursorDir  = "cursors"
 	cursorSize = 32
 )
 
 var (
-	CrossCursor        = OpenCursor("cross", cursorSize)
-	CrosshairCursor    = OpenCursor("crosshair", cursorSize)
-	GrabCursor         = OpenCursor("grab", cursorSize)
-	GrabbingCursor     = OpenCursor("grabbing", cursorSize)
-	IbeamCursor        = OpenCursor("ibeam", cursorSize)
-	LeftPtrCursor      = OpenCursor("left_ptr", cursorSize)
-	PlusCursor         = OpenCursor("plus", cursorSize)
-	PointingHandCursor = OpenCursor("pointing_hand", cursorSize)
-	RightPtrCursor     = OpenCursor("right_ptr", cursorSize)
-	TcrossCursor       = OpenCursor("tcross", cursorSize)
+	CrossCursor     = OpenCursor("cross", cursorSize)
+	CrosshairCursor = OpenCursor("crosshair", cursorSize)
+	//GrabCursor         = OpenCursor("grab", cursorSize)
+	//GrabbingCursor     = OpenCursor("grabbing", cursorSize)
+	//IbeamCursor        = OpenCursor("ibeam", cursorSize)
+	LeftPtrCursor = OpenCursor("left_ptr", cursorSize)
+	PlusCursor    = OpenCursor("plus", cursorSize)
+	//PointingHandCursor = OpenCursor("pointing_hand", cursorSize)
+	//RightPtrCursor     = OpenCursor("right_ptr", cursorSize)
+	TcrossCursor = OpenCursor("tcross", cursorSize)
 
 	CursorList = []*Cursor{
 		CrossCursor,
 		CrosshairCursor,
-		GrabCursor,
-		GrabbingCursor,
-		IbeamCursor,
+		//GrabCursor,
+		//GrabbingCursor,
+		//IbeamCursor,
 		LeftPtrCursor,
 		PlusCursor,
-		PointingHandCursor,
-		RightPtrCursor,
+		//PointingHandCursor,
+		//RightPtrCursor,
 		TcrossCursor,
 	}
 )
@@ -60,10 +61,11 @@ func OpenCursor(cursorName string, size int) *Cursor {
 	hotspotPattern := regexp.MustCompile("@([0-9]+),([0-9]+)\\.png")
 	fileList, err := fs.Glob(cursorFS, fileNamePattern)
 	if err != nil {
-		log.Fatalf("Couldn't glob filesystem: %v", err)
+		log.Fatalf("%s: Couldn't glob filesystem: %v", cursorName, err)
 	}
 	if len(fileList) != 1 {
-		log.Fatalf("Expected only one matching file; got %d", len(fileList))
+		log.Fatalf("%s: Expected one matching file; got %d", cursorName,
+			len(fileList))
 	}
 	coordList := hotspotPattern.FindStringSubmatch(fileList[0])
 	if coordList == nil {

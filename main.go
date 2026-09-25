@@ -33,6 +33,7 @@ var (
 		"Showing all available fonts",
 		"Shuffle parts of an image randomly",
 		"AdaGUI",
+		"Simple Painter",
 	}
 
 	colorList = []color.RGBA{
@@ -55,6 +56,7 @@ func main() {
 	var timeout time.Duration
 	var rotate geom.RotationType
 	var numObjs int
+	var direct bool
 	var win Window
 	var winInfo string
 	var sigChan chan os.Signal
@@ -63,6 +65,7 @@ func main() {
 		winInfo += fmt.Sprintf("\n%d - %s", i, txt)
 	}
 
+	flag.BoolVar(&direct, "direct", false, "Write direct to Framebuffer")
 	flag.IntVar(&numObjs, "numObjs", 0, "Number of objects.")
 	flag.IntVar(&progIdx, "prog", 0, "Index of program to play."+winInfo)
 	flag.Var(&rotate, "rotate", "Rotation of the screen")
@@ -114,6 +117,8 @@ func main() {
 		win = NewShuffleAnimation(drawBounds)
 	case 7:
 		win = NewGUI(drawBounds)
+	case 8:
+		win = NewPainterWindow(drawBounds)
 	default:
 		log.Fatalf("No Window with index %d found", progIdx)
 	}
@@ -126,14 +131,17 @@ func main() {
 	log.Printf("----------------------------------------------------")
 	log.Printf("Timing statistics:")
 	for i := range app.Timer.NumLaps {
+		name := app.Timer.LapName(i + 1)
 		aver := app.Timer.Avg(i + 1)
 		mini := app.Timer.Min(i + 1)
 		maxi := app.Timer.Max(i + 1)
-		log.Printf("  %5d: %v  (%v .. %v)", i+1, aver, mini, maxi)
+		log.Printf("- %-10s: %v  (%v .. %v)", name, aver, mini, maxi)
 	}
+	name := app.Timer.LapName(0)
 	aver := app.Timer.Avg(0)
 	mini := app.Timer.Min(0)
 	maxi := app.Timer.Max(0)
-	log.Printf("  total: %v  (%v .. %v)", aver, mini, maxi)
+	log.Printf("")
+	log.Printf("  %-10s: %v  (%v .. %v)", name, aver, mini, maxi)
 	log.Printf("----------------------------------------------------")
 }

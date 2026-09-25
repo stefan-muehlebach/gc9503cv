@@ -29,7 +29,7 @@ type Node interface {
 	SetMinSize(size Point)
 	Size() Point
 	SetSize(size Point)
-	FindTarget(pt Point) Node
+	FindTarget(pt Point) (Node, Point)
 	IsVisible() bool
 	Update(dt time.Duration)
 	Draw(gc *gg.Context)
@@ -57,11 +57,11 @@ func (n *nodeEmbed) Wrappee() *nodeEmbed {
 }
 
 func (n *nodeEmbed) Bounds() Rectangle {
-	return Rectangle{Min: n.pos, Max: n.pos.Add(n.size)}
+	return Rectangle{Min: n.pos, Max: n.pos.Add(n.Size())}
 }
 
 func (n *nodeEmbed) Rect() Rectangle {
-	return Rectangle{Max: n.size}
+	return Rectangle{Max: n.Size()}
 }
 
 func (n *nodeEmbed) Pos() Point {
@@ -88,11 +88,11 @@ func (n *nodeEmbed) SetSize(size Point) {
 	n.size = size
 }
 
-func (n *nodeEmbed) FindTarget(pt Point) Node {
+func (n *nodeEmbed) FindTarget(pt Point) (Node, Point) {
 	if pt.In(n.Bounds()) {
-		return n.wrapper
+		return n.wrapper, pt
 	} else {
-		return nil
+		return nil, Point{}
 	}
 }
 
@@ -153,6 +153,8 @@ func (w *windowEmbed) SetMouse(mouse *Mouse) {
 }
 
 func (w *windowEmbed) Run() {
+	var node Node
+
 	w.isRunning = true
 	for ev := range w.mouse.EventQ {
 		if !w.isRunning {
@@ -161,7 +163,7 @@ func (w *windowEmbed) Run() {
 		if w.Root == nil {
 			continue
 		}
-		node := w.Root.FindTarget(ev.Pos)
+		node, ev.Pos = w.Root.FindTarget(ev.Pos)
 		switch ev.Type {
 		case MoveEvent, DragEvent:
 			if w.ActiveNode != node {
@@ -219,7 +221,14 @@ func NewApplication(disp *GC9503CV) *Application {
 	a := &Application{}
 
 	a.disp = disp
-	a.Timer = NewStopwatch("New Timer")
+	a.Timer = NewStopwatch("Rendering Pipeline")
+	a.Timer.SetLapNames(
+		"Animate",
+		"Refresh",
+		"Compose",
+		"Convert",
+		"Send",
+	)
 	a.mainImg = image.NewRGBA(disp.DrawBounds().ToInt())
 	a.pixBuf = iliimg.NewILIImage(disp.DispBounds().ToInt())
 	a.pixBuf.SetLSBFirst()

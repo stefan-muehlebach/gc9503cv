@@ -28,10 +28,10 @@ import (
 
 // Device represents the frame buffer. It implements the draw.Image interface.
 type Device struct {
-	file       *os.File
-	Pix     []byte
-	Stride      int
 	Rect     image.Rectangle
+	Stride      int
+	Pix     []byte
+	file       *os.File
 	colorModel color.Model
 }
 
@@ -74,10 +74,10 @@ func Open(device string) (*Device, error) {
 	}
 
 	return &Device{
-		file,
-		Pix,
-		int(fixInfo.line_length),
 		image.Rect(0, 0, int(varInfo.xres), int(varInfo.yres)),
+		int(fixInfo.line_length),
+		Pix,
+		file,
 		colorModel,
 	}, nil
 }

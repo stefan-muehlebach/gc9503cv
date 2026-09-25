@@ -2,6 +2,7 @@ package iliimg
 
 import (
 	"github.com/stefan-muehlebach/gc9503cv/geom"
+	"github.com/stefan-muehlebach/gc9503cv/framebuffer"
 	"image"
 	"image/color"
 )
@@ -26,12 +27,26 @@ func NewILIImage(r image.Rectangle) *ILIImage {
 	return p
 }
 
+func NewILIFb(fb *framebuffer.Device) *ILIImage {
+	p := &ILIImage{
+		Rect:   fb.Rect,
+		Stride: fb.Stride,
+		Pix:    fb.Pix,
+	}
+	p.Clear()
+	return p
+}
+
 func (p *ILIImage) SetLSBFirst() {
 	p.lsbFirst = true
 }
 
 func (p *ILIImage) SetMSBFirst() {
 	p.lsbFirst = false
+}
+
+func (p *ILIImage) SetFB(fb *framebuffer.Device) {
+	p.Pix = fb.Pix
 }
 
 // ColorModel, Bounds und At werden vom Interface image.Image gefordert.
@@ -138,13 +153,16 @@ func (p *ILIImage) Convert(src *image.RGBA, rot geom.RotationType) {
 		dstBaseIdx = src.Rect.Min.Y*p.Stride + src.Rect.Min.X*bytesPerPixel
 	case geom.Rot090:
 		dstInnerIdxStep, dstOuterIdxStep = -p.Stride, bytesPerPixel
-		dstBaseIdx = (960-1-src.Rect.Min.X)*p.Stride + src.Rect.Min.Y*bytesPerPixel
+		dstBaseIdx = (p.Rect.Dy()-1-src.Rect.Min.X)*p.Stride +
+			src.Rect.Min.Y*bytesPerPixel
 	case geom.Rot180:
 		dstInnerIdxStep, dstOuterIdxStep = -bytesPerPixel, -p.Stride
-		dstBaseIdx = (960-1-src.Rect.Min.Y)*p.Stride + (480-1-src.Rect.Min.X)*bytesPerPixel
+		dstBaseIdx = (p.Rect.Dy()-1-src.Rect.Min.Y)*p.Stride +
+			(p.Rect.Dx()-1-src.Rect.Min.X)*bytesPerPixel
 	case geom.Rot270:
 		dstInnerIdxStep, dstOuterIdxStep = p.Stride, -bytesPerPixel
-		dstBaseIdx = src.Rect.Min.X*p.Stride + (480-1-src.Rect.Min.Y)*bytesPerPixel
+		dstBaseIdx = src.Rect.Min.X*p.Stride +
+			(p.Rect.Dx()-1-src.Rect.Min.Y)*bytesPerPixel
 	}
 
 	for row = src.Rect.Min.Y; row < src.Rect.Max.Y; row++ {
@@ -242,6 +260,7 @@ Loop4:
 // Konvertiert die Bilddaten des Bildes hinter src (RGBA-Image) in ein
 // ILI-spezifisches Bild. Dabei kann mit Rect (d.h. Bounds()) bestimmt werden
 // welcher Bereich konvertiert werden soll.
+/*
 func (p *ILIImage) ConvertOrig(src *image.RGBA) {
 	var row, col int
 	var srcBaseIdx, srcIdx, dstBaseIdx, dstIdx int
@@ -272,10 +291,12 @@ func (p *ILIImage) ConvertOrig(src *image.RGBA) {
 		dstBaseIdx += p.Stride
 	}
 }
+*/
 
 // Konvertiert die Bilddaten des Bildes hinter src (RGBA-Image) in ein
 // ILI-spezifisches Bild. Dabei kann mit Rect (d.h. Bounds()) bestimmt werden
 // welcher Bereich konvertiert werden soll.
+/*
 func (p *ILIImage) ConvertSimple(src *image.RGBA) {
 	var row, col int
 	var srcBaseIdx, srcIdx, srcInnerIdxStep, srcOuterIdxStep int
@@ -310,4 +331,4 @@ func (p *ILIImage) ConvertSimple(src *image.RGBA) {
 		dstBaseIdx += dstOuterIdxStep
 	}
 }
-
+*/

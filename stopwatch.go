@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"math"
 	"time"
 )
@@ -42,6 +43,7 @@ type Stopwatch struct {
 	all                 timerValues
 	timers              [maxLaps]timerValues
 	laps				[maxLaps]time.Duration
+	lapNames			[maxLaps]string
 	NumLaps             int
 }
 
@@ -63,6 +65,22 @@ func (s *Stopwatch) Start() {
 	s.isRunning = true
 	s.NumLaps = 0
 	s.t0 = time.Now()
+}
+
+func (s *Stopwatch) SetLapNames(names ...string) {
+	for i, name := range names {
+		s.lapNames[i] = name
+	}
+}
+
+func (s *Stopwatch) LapName(id int) string {
+	if id == 0 {
+		return "Total"
+	} else if id <= maxLaps {
+		return s.lapNames[id-1]
+	} else {
+		return ""
+	}
 }
 
 // Stellt eine neue Rundenzeit in die Messreihe.
@@ -138,6 +156,9 @@ func (s *Stopwatch) Reset() {
 		s.timers[i].reset()
 	}
 	s.all.reset()
+	for i := range s.lapNames {
+		s.lapNames[i] = fmt.Sprintf("%d", i+1)
+	}
 }
 
 // Retourniert die aufkumulierte Messdauer. Sind auch Zwischenzeiten erfasst

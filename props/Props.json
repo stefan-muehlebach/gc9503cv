@@ -126,7 +126,8 @@
 		"Name": "Layout",
 		"ParentName": "Default",
 		"Sizes": {
-			"Padding": 5
+			"Padding":      5,
+			"InnerPadding": 5
 		}
 	},
 
@@ -271,11 +272,14 @@
 	},
 
 	{
-		"Name": "Point",
+		"Name": "Circle",
 		"ParentName": "Shape",
+		"Colors": {
+        	"BorderColor" : { "Name": "White" }
+		},
     	"Sizes": {
-        	"Width":  8.0,
-        	"Height": 8.0
+        	"BorderWidth":         2.0,
+        	"PushedBorderWidth":   8.0
     	}
 	},
 
@@ -286,7 +290,7 @@
         	"BorderColor" : "0xFAEBD7"
 		},
     	"Sizes": {
-        	"BorderWidth": 3.5
+        	"BorderWidth": 2.0
     	}
 	}
 ]

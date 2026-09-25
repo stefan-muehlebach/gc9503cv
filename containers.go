@@ -14,11 +14,11 @@ type Container interface {
 	Node
 	Add(nl ...Node)
 	Del(n Node)
-	FindTarget(pt Point) Node
+	FindTarget(pt Point) (Node, Point)
 	Update(dt time.Duration)
 	Draw(gc *gg.Context)
-	SetLayoutManager(layoutManager LayoutManager)
-	LayoutManager() LayoutManager
+	//SetLayoutManager(layoutManager LayoutManager)
+	//LayoutManager() LayoutManager
 	layout()
 }
 
@@ -33,6 +33,7 @@ type containerEmbed struct {
 func (c *containerEmbed) Init(n Node) {
 	c.nodeEmbed.Init(n)
 	c.childList = list.New()
+	c.Layout = &NullLayout{}
 }
 
 func (c *containerEmbed) SetSize(size Point) {
@@ -67,17 +68,17 @@ func (c *containerEmbed) Del(n Node) {
 	c.layout()
 }
 
-func (c *containerEmbed) FindTarget(pt Point) Node {
-	if n := c.nodeEmbed.FindTarget(pt); n == nil {
-		return nil
+func (c *containerEmbed) FindTarget(pt Point) (Node, Point) {
+	if n, _ := c.nodeEmbed.FindTarget(pt); n == nil {
+		return nil, Point{}
 	}
 	pt = pt.Sub(c.pos)
 	for e := c.childList.Back(); e != nil; e = e.Prev() {
-		if n := e.Value.(Node).FindTarget(pt); n != nil {
-			return n
+		if n, ptRel := e.Value.(Node).FindTarget(pt); n != nil {
+			return n, ptRel
 		}
 	}
-	return c
+	return c, pt
 }
 
 func (c *containerEmbed) Update(dt time.Duration) {
@@ -93,14 +94,6 @@ func (c *containerEmbed) Draw(gc *gg.Context) {
 		e.Value.(Node).Draw(gc)
 	}
 	gc.Pop()
-}
-
-func (c *containerEmbed) SetLayoutManager(layoutManager LayoutManager) {
-	c.Layout = layoutManager
-}
-
-func (c *containerEmbed) LayoutManager() LayoutManager {
-	return c.Layout
 }
 
 func (c *containerEmbed) layout() {
@@ -126,19 +119,32 @@ func NewGroup() *Group {
 
 type Panel struct {
 	containerEmbed
-	bgColor colors.RGBA
+	fillColor, lineColor colors.RGBA
+	IsClipping bool
 }
 
 func NewPanel(color colors.RGBA) *Panel {
 	p := &Panel{}
 	p.Init(p)
-	p.bgColor = color
+	p.InitProp("Panel")
+	p.fillColor = color
+	p.lineColor = color
 	return p
 }
 
 func (p *Panel) Draw(gc *gg.Context) {
-	gc.DrawRectangle(p.Bounds().AsCoord())
-	gc.SetFillColor(p.bgColor)
-	gc.Fill()
-	p.containerEmbed.Draw(gc)
+	gc.SetLineWidth(1)
+	gc.SetLineColor(p.lineColor)
+	gc.SetFillColor(p.fillColor)
+	gc.DrawRectangle(p.Bounds().Inset(0.5,0.5).AsCoord())
+	gc.FillStroke()
+
+	if p.IsClipping {
+		gc.DrawRectangle(p.Bounds().AsCoord())
+		gc.Clip()
+		p.containerEmbed.Draw(gc)
+		gc.ResetClip()
+	} else {
+		p.containerEmbed.Draw(gc)
+	}
 }

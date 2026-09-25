@@ -1,11 +1,12 @@
 package main
 
 import (
+	"math/rand/v2"
+	"time"
+
 	"github.com/stefan-muehlebach/gc9503cv/geom"
 	"github.com/stefan-muehlebach/gg"
 	"github.com/stefan-muehlebach/gg/colors"
-	"math/rand/v2"
-	"time"
 )
 
 const (
@@ -28,17 +29,17 @@ func NewPolygonAnimation(bounds geom.Rectangle[int],
 		numObjs = defNumPolygons
 	}
 
-	a.Root = NewPanel(colors.SlateGray)
-	a.Root.SetLayoutManager(NewPadLayout(20))
-	a.Root.SetSize(bounds.ToFloat().Size())
+	root := NewGroup()
+	root.Layout = NewPadLayout(20)
+	root.SetSize(bounds.ToFloat().Size())
 
-	a.canvas = NewPanel(colors.DarkSlateGray)
-	a.canvas.SetLayoutManager(&NullLayout{})
-	a.Root.Add(a.canvas)
+	a.canvas = NewPanel(colors.Transparent)
+	root.Add(a.canvas)
 
 	for i := 0; i < numObjs; i++ {
-		a.canvas.Add(NewPolygon(numEdges, a.canvas.Bounds()))
+		a.canvas.Add(NewPolygon(numEdges, a.canvas.Rect()))
 	}
+	a.Root = root
 
 	return a
 }
@@ -62,25 +63,26 @@ func (a *PolygonAnim) Refresh() {
 
 type Polygon struct {
 	nodeEmbed
-	rect                   Rectangle
-	posList                []Point
-	velList                []Point
-	strokeColor, fillColor colors.RGBA
+	rect      Rectangle
+	posList   []Point
+	velList   []Point
+	fillColor colors.RGBA
 }
 
 func NewPolygon(edges int, rect Rectangle) *Polygon {
 	p := &Polygon{}
+	p.Init(p)
+	p.InitProp("Polygon")
 	p.rect = rect
 	p.posList = make([]Point, edges)
 	p.velList = make([]Point, edges)
 	for i := range edges {
 		p.posList[i] = rect.RelPos(rand.Float64(), rand.Float64())
 		p.velList[i] = Point{
-			rand.Float64()*5.0 - 2.0,
-			rand.Float64()*5.0 - 2.0,
+			rand.Float64()*5.0 - 2.5,
+			rand.Float64()*5.0 - 2.5,
 		}
 	}
-	p.strokeColor = colors.White
 	p.fillColor = colors.RandGroupColor(colors.Purples).Alpha(0.5)
 	return p
 }
@@ -88,11 +90,11 @@ func NewPolygon(edges int, rect Rectangle) *Polygon {
 func (p *Polygon) Update(dt time.Duration) {
 	for i, pos := range p.posList {
 		pos.Move(p.velList[i])
-		if pos.X < p.rect.Min.X || pos.X > p.rect.Max.X {
+		if pos.X < p.rect.Min.X || pos.X >= p.rect.Max.X {
 			p.velList[i].X *= -1
 			pos.X += p.velList[i].X
 		}
-		if pos.Y < p.rect.Min.Y || pos.Y > p.rect.Max.Y {
+		if pos.Y < p.rect.Min.Y || pos.Y >= p.rect.Max.Y {
 			p.velList[i].Y *= -1
 			pos.Y += p.velList[i].Y
 		}
@@ -106,7 +108,8 @@ func (p *Polygon) Draw(gc *gg.Context) {
 		gc.LineTo(pos.X, pos.Y)
 	}
 	gc.ClosePath()
-	gc.SetLineColor(p.strokeColor)
+	gc.SetLineColor(p.BorderColor())
+	gc.SetLineWidth(p.BorderWidth())
 	gc.SetFillColor(p.fillColor)
 	gc.FillStroke()
 }

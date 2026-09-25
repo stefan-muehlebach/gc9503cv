@@ -1,13 +1,14 @@
 package main
 
 import (
-	"github.com/stefan-muehlebach/gc9503cv/geom"
-	"github.com/stefan-muehlebach/gg"
-	"github.com/stefan-muehlebach/gg/colors"
 	"log"
 	"math"
 	"math/rand/v2"
 	"time"
+
+	"github.com/stefan-muehlebach/gc9503cv/geom"
+	"github.com/stefan-muehlebach/gg"
+	"github.com/stefan-muehlebach/gg/colors"
 )
 
 const (
@@ -37,12 +38,13 @@ func NewCircleAnimation(bounds geom.Rectangle[int], numObjs int) *CircleAnim {
 		numObjs = defNumCircles
 	}
 
-	a.Root = NewPanel(colors.SlateGray)
-	a.Root.SetLayoutManager(NewPadLayout(20))
-	a.Root.SetSize(bounds.ToFloat().Size())
+	root := NewPanel(colors.SlateGray)
+	root.Layout = NewPadLayout(20)
+	root.SetSize(bounds.ToFloat().Size())
+	a.Root = root
 
 	a.canvas = NewPanel(colors.DarkSlateGray)
-	a.canvas.SetLayoutManager(&NullLayout{})
+	a.canvas.Layout = &NullLayout{}
 	a.Root.Add(a.canvas)
 
 	log.Printf("a.canvas.Bounds(): %v", a.canvas.Bounds())
@@ -52,10 +54,14 @@ func NewCircleAnimation(bounds geom.Rectangle[int], numObjs int) *CircleAnim {
 		a.canvas.Add(NewCircle(a.canvas.Rect(), colors.Greens))
 	}
 
+	a.Root.SetOnClick(func(ev InputEvent) {
+		log.Printf("Click in the root object")
+	})
+
 	a.canvas.SetOnClick(func(ev InputEvent) {
 		switch {
 		case ev.Button.IsSet(LeftButton):
-			c := NewCircle(a.canvas.Rect(), colors.Yellows)
+			c := NewCircle(a.canvas.Rect(), colors.Reds)
 			pt := ev.Pos.Sub(a.canvas.Pos())
 			c.SetPos(pt.SubXY(c.r, c.r))
 			a.canvas.Add(c)
@@ -113,7 +119,7 @@ type Circle struct {
 	rect                             Rectangle
 	vel                              Point
 	r                                float64
-	lineColor, fillColor             colors.RGBA
+	fillColor                        colors.RGBA
 	isActive, isSelected, isDragging bool
 }
 
@@ -122,6 +128,7 @@ func NewCircle(rect Rectangle, colGrp colors.ColorGroup) *Circle {
 
 	c := &Circle{}
 	c.Init(c)
+	c.InitProp("Circle")
 	c.rect = rect
 	t := rand.Float64()
 	c.r = (1.0-t)*radMin + t*radMax
@@ -132,7 +139,6 @@ func NewCircle(rect Rectangle, colGrp colors.ColorGroup) *Circle {
 	vel := (1.0-t)*velMax + t*velMin
 	dir := 2.0 * math.Pi * rand.Float64()
 	c.vel = Point{vel * math.Sin(dir), vel * math.Cos(dir)}
-	c.lineColor = colors.White
 	c.fillColor = colors.RandColorByGroup(colGrp).Alpha(0.8)
 
 	c.SetOnPress(func(ev InputEvent) {
@@ -201,12 +207,12 @@ func (c *Circle) Bounds() Rectangle {
 	return Rectangle{Min: c.pos, Max: c.pos.Add(c.size)}
 }
 
-func (c *Circle) FindTarget(pt Point) Node {
+func (c *Circle) FindTarget(pt Point) (Node, Point) {
 	mp := c.pos.AddXY(c.r, c.r)
 	if mp.Distance(pt) <= c.r {
-		return c
+		return c, pt
 	} else {
-		return nil
+		return nil, Point{}
 	}
 }
 
@@ -215,17 +221,19 @@ func (c *Circle) Draw(gc *gg.Context) {
 	gc.DrawCircle(mp.X, mp.Y, c.r)
 
 	if c.isActive {
-		gc.SetLineWidth(7.0)
+		gc.SetLineWidth(c.PushedBorderWidth())
 	} else {
-		gc.SetLineWidth(2.0)
+		gc.SetLineWidth(c.BorderWidth())
 	}
-	gc.SetLineColor(c.lineColor)
+	gc.SetLineColor(c.BorderColor())
 	gc.SetFillColor(c.fillColor)
 	gc.FillStroke()
 
 	if c.isSelected {
 		b := c.Bounds()
 		l := c.r / 3.0
+		//mp := c.pos.AddXY(c.r, c.r)
+
 		gc.SetLineWidth(3.0)
 		gc.SetLineColor(colors.Red)
 		gc.MoveTo(b.Min.X, b.Min.Y+l)
@@ -244,8 +252,8 @@ func (c *Circle) Draw(gc *gg.Context) {
 		gc.LineTo(b.Min.X, b.Max.Y)
 		gc.LineTo(b.Min.X, b.Max.Y-l)
 
-		//gc.DrawLine(c.pos.X-l, c.pos.Y, c.pos.X+l, c.pos.Y)
-		//gc.DrawLine(c.pos.X, c.pos.Y-l, c.pos.X, c.pos.Y+l)
+		//gc.DrawLine(mp.X-l, mp.Y, mp.X+l, mp.Y)
+		//gc.DrawLine(mp.X, mp.Y-l, mp.X, mp.Y+l)
 
 		gc.Stroke()
 	}

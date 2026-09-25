@@ -20,13 +20,14 @@ func NewGUI(bounds geom.Rectangle[int]) *GUI {
 	a.bounds = bounds
 	a.gc = gg.NewContext(a.bounds.Dx(), a.bounds.Dy())
 
-	a.Root = NewPanel(colors.Black)
-	a.Root.SetLayoutManager(NewPadLayout())
-	a.Root.SetSize(bounds.ToFloat().Size())
+	root := NewPanel(colors.Black)
+	root.Layout = NewPadLayout()
+	root.SetSize(bounds.ToFloat().Size())
+	a.Root = root
 
 	main := NewPanel(colors.Black)
-	main.SetLayoutManager(NewVBoxLayout())
-	a.Root.Add(main)
+	main.Layout = NewVBoxLayout()
+	root.Add(main)
 
 	log.Printf("main.Bounds()       : %v", main.Bounds())
 	log.Printf("main.Bounds().Size(): %v", main.Bounds().Size())
@@ -44,7 +45,7 @@ func NewGUI(bounds geom.Rectangle[int]) *GUI {
 	// Toolbar with IconButtons
 	//
 	toolBar := NewGroup()
-	toolBar.SetLayoutManager(NewHBoxLayout())
+	toolBar.Layout = NewHBoxLayout()
 	icn1 := NewIconButton("icons/1.png")
 	icn2 := NewIconButton("icons/2.png")
 	icn3 := NewIconButton("icons/3.png")
@@ -60,10 +61,10 @@ func NewGUI(bounds geom.Rectangle[int]) *GUI {
 	// Checkboxes and Radiobuttons
 	//
 	radboxGroup := NewGroup()
-	radboxGroup.SetLayoutManager(NewHBoxLayout(30))
+	radboxGroup.Layout = NewHBoxLayout()
 
 	chkGroup := NewGroup()
-	chkGroup.SetLayoutManager(NewVBoxLayout())
+	chkGroup.Layout = NewVBoxLayout()
 	chk1 := NewCheckbox("Knoblibrot")
 	chk2 := NewCheckbox("Poulet")
 	chk3 := NewCheckbox("Fondue")
@@ -72,7 +73,7 @@ func NewGUI(bounds geom.Rectangle[int]) *GUI {
 	chkGroup.Add(chk1, chk2, chk3, chk4, chk5)
 
 	radGroup := NewGroup()
-	radGroup.SetLayoutManager(NewVBoxLayout())
+	radGroup.Layout = NewVBoxLayout()
 	rad1 := NewRadiobutton("Zum selber abholen")
 	rad2 := NewRadiobutton("Lieferung")
 	rad3 := NewRadiobutton("Express-Post")
@@ -85,7 +86,7 @@ func NewGUI(bounds geom.Rectangle[int]) *GUI {
 	// Text-Buttons
 	//
 	btnGroup := NewGroup()
-	btnGroup.SetLayoutManager(NewHBoxLayout())
+	btnGroup.Layout = NewHBoxLayout()
 	btnA := NewTextButton("Hallo")
 	btnB := NewTextButton("Benedict")
 	btnC := NewTextButton("...hadigärn...")
@@ -93,18 +94,20 @@ func NewGUI(bounds geom.Rectangle[int]) *GUI {
 	main.Add(btnGroup)
 
 	lblGroup := NewGroup()
-	lblGroup.SetLayoutManager(NewHBoxLayout())
+	lblGroup.Layout = NewHBoxLayout()
 	lbl1 := NewLabel("Äggè")
 	lbl2 := NewLabel("Stefan")
 	lbl3 := NewLabel("Jamal")
 	lblGroup.Add(lbl1, lbl2, lbl3)
 	main.Add(lblGroup)
 
+	// Sliders
+	//
 	sldGroup := NewGroup()
-	sldGroup.SetLayoutManager(NewHBoxLayout())
+	sldGroup.Layout = NewHBoxLayout()
 
 	sld1Group := NewGroup()
-	sld1Group.SetLayoutManager(NewVBoxLayout())
+	sld1Group.Layout = NewVBoxLayout()
 	sldVal := binding.NewFloat()
 	str := binding.FloatToStringWithFormat(sldVal, "%.3f")
 	sld := NewSliderWithData(170, Horizontal, sldVal)
@@ -113,7 +116,7 @@ func NewGUI(bounds geom.Rectangle[int]) *GUI {
 	sld1Group.Add(sld, lbl)
 
 	sld2Group := NewGroup()
-	sld2Group.SetLayoutManager(NewVBoxLayout())
+	sld2Group.Layout = NewVBoxLayout()
 	sldVal = binding.NewFloat()
 	str = binding.FloatToStringWithFormat(sldVal, "%03.f")
 	sld = NewSliderWithData(170, Horizontal, sldVal)
@@ -125,7 +128,7 @@ func NewGUI(bounds geom.Rectangle[int]) *GUI {
 	main.Add(sldGroup)
 
 	gridGroup := NewGroup()
-	gridGroup.SetLayoutManager(NewColumnGridLayout(5))
+	gridGroup.Layout = NewColumnGridLayout(5)
 	for i := range 20 {
 		btn := NewTextButton(fmt.Sprintf("%03d", i))
 		gridGroup.Add(btn)

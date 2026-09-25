@@ -2,16 +2,11 @@ package main
 
 import (
 	"container/list"
+	//"log"
 	"math"
 
-	. "github.com/stefan-muehlebach/gc9503cv/props"
+	"github.com/stefan-muehlebach/gc9503cv/props"
 	"github.com/stefan-muehlebach/gg"
-)
-
-//-----------------------------------------------------------------------------
-
-var (
-	LayoutProps = PropsMap["Layout"]
 )
 
 //-----------------------------------------------------------------------------
@@ -23,9 +18,23 @@ type LayoutManager interface {
 
 //-----------------------------------------------------------------------------
 
-type NullLayout struct{}
+type Orientation int
 
-func (l *NullLayout) Layout(childList *list.List, size Point) {}
+const (
+	Horizontal Orientation = iota
+	Vertical
+)
+
+//-----------------------------------------------------------------------------
+
+type NullLayout struct {
+	sz Point
+}
+
+func (l *NullLayout) Layout(childList *list.List, size Point) {
+	//log.Printf("NullLayout.Layout(size: %v)", size)
+	l.sz = size
+}
 
 func (l *NullLayout) MinSize(childList *list.List) Point {
 	minSize := Point{}
@@ -36,21 +45,25 @@ func (l *NullLayout) MinSize(childList *list.List) Point {
 		}
 		minSize = minSize.Max(n.Bounds().Max)
 	}
-	return minSize
+	return minSize.Min(l.sz)
 }
 
 //-----------------------------------------------------------------------------
 
 type PadLayout struct {
-	pad [4]float64
+	props.PropertyEmbed
+	pads [4]float64
 }
 
 func NewPadLayout(pads ...float64) *PadLayout {
 	var l, t, r, b float64
 
+	lay := &PadLayout{}
+	lay.InitProp("Layout")
+
 	switch len(pads) {
 	case 0:
-		s := LayoutProps.Size(Padding)
+		s := lay.Padding()
 		l, t, r, b = s, s, s, s
 	case 1:
 		l, t, r, b = pads[0], pads[0], pads[0], pads[0]
@@ -61,17 +74,19 @@ func NewPadLayout(pads ...float64) *PadLayout {
 	case 4:
 		l, t, r, b = pads[0], pads[1], pads[2], pads[3]
 	}
-	return &PadLayout{[4]float64{l, t, r, b}}
+	lay.pads = [4]float64{l, t, r, b}
+
+	return lay
 }
 
 func (l *PadLayout) Layout(childList *list.List, size Point) {
-	pos := Point{l.pad[0], l.pad[1]}
-	siz := Point{size.X - l.pad[0] - l.pad[2],
-		size.Y - l.pad[1] - l.pad[3]}
+	pos := Point{l.pads[0], l.pads[1]}
+	siz := Point{size.X - l.pads[0] - l.pads[2],
+		size.Y - l.pads[1] - l.pads[3]}
 	for e := childList.Front(); e != nil; e = e.Next() {
-		node := e.Value.(Node)
-		node.SetSize(siz)
-		node.SetPos(pos)
+		n := e.Value.(Node)
+		n.SetSize(siz)
+		n.SetPos(pos)
 	}
 }
 
@@ -84,37 +99,26 @@ func (l *PadLayout) MinSize(childList *list.List) Point {
 		}
 		minSize = minSize.Max(n.MinSize())
 	}
-	return minSize.Add(Point{l.pad[0] + l.pad[2], l.pad[1] + l.pad[3]})
+	return minSize.Add(Point{l.pads[0] + l.pads[2], l.pads[1] + l.pads[3]})
 }
 
 //-----------------------------------------------------------------------------
 
-type Orientation int
-
-const (
-	Horizontal Orientation = iota
-	Vertical
-)
-
 type BoxLayout struct {
+	props.PropertyEmbed
 	orient Orientation
-	pad    float64
 }
 
-func NewHBoxLayout(pads ...float64) *BoxLayout {
-	pad := LayoutProps.Size(InnerPadding)
-	if len(pads) > 0 {
-		pad = pads[0]
-	}
-	return &BoxLayout{Horizontal, pad}
+func NewHBoxLayout() *BoxLayout {
+	l := &BoxLayout{orient: Horizontal}
+	l.InitProp("Layout")
+	return l
 }
 
-func NewVBoxLayout(pads ...float64) *BoxLayout {
-	pad := LayoutProps.Size(InnerPadding)
-	if len(pads) > 0 {
-		pad = pads[0]
-	}
-	return &BoxLayout{Vertical, pad}
+func NewVBoxLayout() *BoxLayout {
+	l := &BoxLayout{orient: Vertical}
+	l.InitProp("Layout")
+	return l
 }
 
 func (l *BoxLayout) isSpacer(obj Node) bool {
@@ -132,15 +136,15 @@ func (l *BoxLayout) Layout(childList *list.List, size Point) {
 	spacers := 0
 	total := 0.0
 	for e := childList.Front(); e != nil; e = e.Next() {
-		node := e.Value.(Node)
-		if !node.IsVisible() {
+		n := e.Value.(Node)
+		if !n.IsVisible() {
 			continue
 		}
-		if l.isSpacer(node) {
+		if l.isSpacer(n) {
 			spacers++
 			continue
 		}
-		nodeSize := node.MinSize()
+		nodeSize := n.MinSize()
 		switch l.orient {
 		case Horizontal:
 			total += nodeSize.X
@@ -151,10 +155,10 @@ func (l *BoxLayout) Layout(childList *list.List, size Point) {
 	extra, extraCell := 0.0, 0.0
 	switch l.orient {
 	case Horizontal:
-		extra = size.X - total - l.pad*float64(childList.Len()-
+		extra = size.X - total - l.InnerPadding()*float64(childList.Len()-
 			spacers-1)
 	case Vertical:
-		extra = size.Y - total - l.pad*float64(childList.Len()-
+		extra = size.Y - total - l.InnerPadding()*float64(childList.Len()-
 			spacers-1)
 	}
 	if spacers > 0 {
@@ -162,11 +166,11 @@ func (l *BoxLayout) Layout(childList *list.List, size Point) {
 	}
 	pos := Point{}
 	for e := childList.Front(); e != nil; e = e.Next() {
-		node := e.Value.(Node)
-		if !node.IsVisible() {
+		n := e.Value.(Node)
+		if !n.IsVisible() {
 			continue
 		}
-		if l.isSpacer(node) {
+		if l.isSpacer(n) {
 			switch l.orient {
 			case Horizontal:
 				pos.X += extraCell
@@ -175,16 +179,16 @@ func (l *BoxLayout) Layout(childList *list.List, size Point) {
 			}
 			continue
 		}
-		node.SetPos(pos)
+		n.SetPos(pos)
 		switch l.orient {
 		case Horizontal:
-			width := node.MinSize().X
-			pos.X += width + l.pad
-			node.SetSize(Point{width, size.Y})
+			width := n.MinSize().X
+			pos.X += width + l.InnerPadding()
+			n.SetSize(Point{width, size.Y})
 		case Vertical:
-			height := node.MinSize().Y
-			pos.Y += height + l.pad
-			node.SetSize(Point{size.X, height})
+			height := n.MinSize().Y
+			pos.Y += height + l.InnerPadding()
+			n.SetSize(Point{size.X, height})
 		}
 	}
 }
@@ -194,26 +198,54 @@ func (l *BoxLayout) MinSize(childList *list.List) Point {
 	minSize := Point{}
 	addPadding := false
 	for e := childList.Front(); e != nil; e = e.Next() {
-		node := e.Value.(Node)
-		if !node.IsVisible() || l.isSpacer(node) {
+		n := e.Value.(Node)
+		if !n.IsVisible() || l.isSpacer(n) {
 			continue
 		}
-		childSize := node.MinSize()
+		childSize := n.MinSize()
 		switch l.orient {
 		case Horizontal:
 			minSize.Y = max(minSize.Y, childSize.Y)
 			minSize.X += childSize.X
 			if addPadding {
-				minSize.X += l.pad
+				minSize.X += l.InnerPadding()
 			}
 		case Vertical:
 			minSize.X = max(minSize.X, childSize.X)
 			minSize.Y += childSize.Y
 			if addPadding {
-				minSize.Y += l.pad
+				minSize.Y += l.InnerPadding()
 			}
 		}
 		addPadding = true
+	}
+	return minSize
+}
+
+//-----------------------------------------------------------------------------
+
+type MaxLayout struct{}
+
+func NewMaxLayout() LayoutManager {
+	return &MaxLayout{}
+}
+
+func (l *MaxLayout) Layout(childList *list.List, size Point) {
+	for e := childList.Front(); e != nil; e = e.Next() {
+		n := e.Value.(Node)
+		n.SetSize(size)
+		n.SetPos(Point{0, 0})
+	}
+}
+
+func (l *MaxLayout) MinSize(childList *list.List) Point {
+	minSize := Point{0, 0}
+	for e := childList.Front(); e != nil; e = e.Next() {
+		n := e.Value.(Node)
+		if !n.IsVisible() {
+			continue
+		}
+		minSize = minSize.Max(n.MinSize())
 	}
 	return minSize
 }
@@ -225,6 +257,7 @@ func (l *BoxLayout) MinSize(childList *list.List) Point {
 // Groesse, dann wird eine weitere Zeile (resp. Spalte) erstellt und
 // weitere Kinder analog zur ersten Zeile fortlaufend angeordnet.
 type GridLayout struct {
+	props.PropertyEmbed
 	Cols   int
 	orient Orientation
 }
@@ -232,12 +265,14 @@ type GridLayout struct {
 // Fixiert die Anzahl Spalten des GridLayouts.
 func NewColumnGridLayout(cols int) LayoutManager {
 	l := &GridLayout{Cols: cols, orient: Horizontal}
+	l.InitProp("Layout")
 	return l
 }
 
 // Fixiert die Anzahl Zeilen des GridLayouts.
 func NewRowGridLayout(rows int) LayoutManager {
 	l := &GridLayout{Cols: rows, orient: Vertical}
+	l.InitProp("Layout")
 	return l
 }
 
@@ -251,25 +286,25 @@ func (l *GridLayout) countRows(childList *list.List) int {
 	}
 	count := 0
 	for e := childList.Front(); e != nil; e = e.Next() {
-		node := e.Value.(Node)
-		if node.IsVisible() {
+		n := e.Value.(Node)
+		if n.IsVisible() {
 			count++
 		}
 	}
 	return int(math.Ceil(float64(count) / float64(l.Cols)))
 }
 
-func getLeading(size float64, offset int) float64 {
-	return (size + float64(LayoutProps.Size(Padding))) * float64(offset)
+func (l *GridLayout) getLeading(size float64, offset int) float64 {
+	return (size + l.Padding()) * float64(offset)
 }
 
-func getTrailing(size float64, offset int) float64 {
-	return getLeading(size, offset+1) - LayoutProps.Size(Padding)
+func (l *GridLayout) getTrailing(size float64, offset int) float64 {
+	return l.getLeading(size, offset+1) - l.Padding()
 }
 
 func (l *GridLayout) Layout(childList *list.List, size Point) {
 	rows := l.countRows(childList)
-	padding := LayoutProps.Size(Padding)
+	padding := l.InnerPadding()
 	padWidth := float64(l.Cols-1) * padding
 	padHeight := float64(rows-1) * padding
 	cellWidth := float64(size.X-padWidth) / float64(l.Cols)
@@ -283,18 +318,18 @@ func (l *GridLayout) Layout(childList *list.List, size Point) {
 	row, col := 0, 0
 	i := 0
 	for e := childList.Front(); e != nil; e = e.Next() {
-		node := e.Value.(Node)
-		if !node.IsVisible() {
+		n := e.Value.(Node)
+		if !n.IsVisible() {
 			continue
 		}
 
-		x1 := getLeading(cellWidth, col)
-		y1 := getLeading(cellHeight, row)
-		x2 := getTrailing(cellWidth, col)
-		y2 := getTrailing(cellHeight, row)
+		x1 := l.getLeading(cellWidth, col)
+		y1 := l.getLeading(cellHeight, row)
+		x2 := l.getTrailing(cellWidth, col)
+		y2 := l.getTrailing(cellHeight, row)
 
-		node.SetPos(Point{x1, y1})
-		node.SetSize(Point{x2 - x1, y2 - y1})
+		n.SetPos(Point{x1, y1})
+		n.SetSize(Point{x2 - x1, y2 - y1})
 
 		if l.horizontal() {
 			if (i+1)%l.Cols == 0 {
@@ -319,14 +354,14 @@ func (l *GridLayout) MinSize(childList *list.List) Point {
 	rows := l.countRows(childList)
 	minSize := Point{0, 0}
 	for e := childList.Front(); e != nil; e = e.Next() {
-		node := e.Value.(Node)
-		if !node.IsVisible() {
+		n := e.Value.(Node)
+		if !n.IsVisible() {
 			continue
 		}
-		minSize = minSize.Max(node.MinSize())
+		minSize = minSize.Max(n.MinSize())
 	}
 
-	pad := LayoutProps.Size(Padding)
+	pad := l.Padding()
 	if l.horizontal() {
 		minContentSize := Point{minSize.X * float64(l.Cols),
 			minSize.Y * float64(rows)}

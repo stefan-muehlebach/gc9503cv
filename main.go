@@ -12,7 +12,6 @@ import (
 	"periph.io/x/host/v3"
 
 	"github.com/stefan-muehlebach/gc9503cv/geom"
-	"github.com/stefan-muehlebach/gc9503cv/props"
 )
 
 //----------------------------------------------------------------------------
@@ -34,6 +33,8 @@ var (
 		"Shuffle parts of an image randomly",
 		"AdaGUI",
 		"Simple Painter",
+		"Sprites Demo",
+		"Slideshow",
 	}
 
 	colorList = []color.RGBA{
@@ -56,6 +57,7 @@ func main() {
 	var timeout time.Duration
 	var rotate geom.RotationType
 	var numObjs int
+	var initOnly, noInit bool
 	var direct bool
 	var win Window
 	var winInfo string
@@ -65,19 +67,43 @@ func main() {
 		winInfo += fmt.Sprintf("\n%d - %s", i, txt)
 	}
 
-	flag.BoolVar(&direct, "direct", false, "Write direct to Framebuffer")
+	flag.BoolVar(&direct, "direct", false, "Write direct to Framebuffer.")
+	flag.BoolVar(&GlobDebug, "debug", false, "Turn debug messages on.")
+	flag.BoolVar(&initOnly, "init", false, "Just initialize the Screen and exit.")
+	flag.BoolVar(&noInit, "noinit", false, "No initialize before drawing.")
 	flag.IntVar(&numObjs, "numObjs", 0, "Number of objects.")
 	flag.IntVar(&progIdx, "prog", 0, "Index of program to play."+winInfo)
-	flag.Var(&rotate, "rotate", "Rotation of the screen")
+	flag.Var(&rotate, "rotate", "Rotation of the screen.")
 	flag.DurationVar(&timeout, "timeout", 10*time.Second,
-		"Duration (for animations)")
+		"Duration of program.")
 	flag.Parse()
 
-	log.Printf("PropsMap: %v\n", props.PropsMap)
+	StartProfiling()
+	defer StopProfiling()
 
 	if _, err := host.Init(); err != nil {
 		log.Fatalf("host.Init(): %v", err)
 	}
+
+	disp = Open(rotate)
+	if !noInit {
+		disp.Init(true)
+	}
+	if initOnly {
+		disp.Close()
+		return
+	}
+	dispBounds = disp.DispBounds()
+	drawBounds = disp.DrawBounds()
+	drawRect = disp.DrawRect()
+
+	if GlobDebug {
+		log.Printf("display bounds: %v", dispBounds)
+		log.Printf("drawing bounds: %v", drawBounds)
+		log.Printf("drawing rect  : %v", drawRect)
+	}
+
+	// log.Printf("PropsMap: %v\n", props.PropsMap)
 
 	sigChan = make(chan os.Signal)
 	signal.Notify(sigChan, os.Interrupt)
@@ -85,18 +111,6 @@ func main() {
 		<-sigChan
 		app.Stop()
 	}()
-
-	disp = Open(rotate)
-	disp.Init(true)
-	dispBounds = disp.DispBounds()
-	drawBounds = disp.DrawBounds()
-	drawRect = disp.DrawRect()
-
-	if debugFlag {
-		log.Printf("display bounds: %v", dispBounds)
-		log.Printf("drawing bounds: %v", drawBounds)
-		log.Printf("drawing rect  : %v", drawRect)
-	}
 
 	app = NewApplication(disp)
 
@@ -108,7 +122,7 @@ func main() {
 	case 2:
 		win = NewCircleAnimation(drawBounds, 0)
 	case 3:
-		win = NewPolyhedronAnimation(drawBounds, numObjs)
+		win = NewPolyhedronWindow(drawBounds)
 	case 4:
 		win = NewGoColorAnimation(drawBounds)
 	case 5:
@@ -119,13 +133,17 @@ func main() {
 		win = NewGUI(drawBounds)
 	case 8:
 		win = NewPainterWindow(drawBounds)
+	case 9:
+		win = NewSpriteWindow(drawBounds)
+	case 10:
+		win = NewImageWindow(drawBounds)
 	default:
-		log.Fatalf("No Window with index %d found", progIdx)
+		log.Fatalf("No program with index %d found!", progIdx)
 	}
 	app.SetWindow(win)
 
 	time.AfterFunc(timeout, app.Stop)
-	log.Printf("Showing Window Nr. %d", progIdx)
+	log.Printf("Playing program no %d: '%s'", progIdx, windowList[progIdx])
 	app.Run()
 
 	log.Printf("----------------------------------------------------")

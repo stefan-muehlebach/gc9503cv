@@ -78,7 +78,7 @@ func (a *FontsAnim) Init() {
 	a.p1 = a.rect.SW()
 }
 
-func (a *FontsAnim) Update(dt time.Duration) {
+func (a *FontsAnim) Update(t time.Time) {
 	if a.idx != a.lastIdx {
 		a.face, _ = fonts.NewFace(fonts.Map[a.fontList[a.idx]], a.fontSize)
 		a.lastIdx = a.idx

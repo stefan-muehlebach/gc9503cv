@@ -79,8 +79,8 @@ func (a *CircleAnim) Init() {
 	a.gc.SetLineJoinRound()
 }
 
-func (a *CircleAnim) Update(dt time.Duration) {
-	a.Root.Update(dt)
+func (a *CircleAnim) Update(t time.Time) {
+	a.Root.Update(t)
 
 	for el := a.canvas.childList.Front(); el != nil; el = el.Next() {
 		this := el.Value.(*Circle)
@@ -179,7 +179,7 @@ func NewCircle(rect Rectangle, colGrp colors.ColorGroup) *Circle {
 	return c
 }
 
-func (c *Circle) Update(dt time.Duration) {
+func (c *Circle) Update(t time.Time) {
 	if c.isDragging {
 		return
 	}

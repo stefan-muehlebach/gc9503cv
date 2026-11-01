@@ -1,14 +1,16 @@
 package mouse
 
 import (
+	"fmt"
+
 	"github.com/stefan-muehlebach/gc9503cv/event/key"
 )
 
 //----------------------------------------------------------------------------
 
 type Event struct {
-	X, Y float64
-	Button Button
+	X, Y      float64
+	Button    Button
 	Modifiers key.Modifiers
 	Direction Direction
 }
@@ -16,13 +18,15 @@ type Event struct {
 type Button int32
 
 const (
-	ButtonNone Button = +0
-	ButtonLeft Button = +1
-	ButtonMiddle Button = +2
-	ButtonRight Button = +3
+	ButtonNone Button = iota
+	ButtonLeft
+	ButtonMiddle
+	ButtonRight
 
-	ButtonWheelUp Button = -1
-	ButtonWheelDown Button = -2
+	ButtonWheelUp    Button = -1
+	ButtonWheelDown  Button = -2
+	ButtonWheelLeft  Button = -3
+	ButtonWheelRight Button = -4
 )
 
 func (b Button) IsWheel() bool {
@@ -38,3 +42,17 @@ const (
 	DirStep
 )
 
+func (d Direction) String() string {
+	switch d {
+	case DirNone:
+		return "None"
+	case DirPress:
+		return "Press"
+	case DirRelease:
+		return "Release"
+	case DirStep:
+		return "Step"
+	default:
+		return fmt.Sprintf("mouse.Direction(%d)", d)
+	}
+}

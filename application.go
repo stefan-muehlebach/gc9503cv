@@ -1,3 +1,5 @@
+//go:build !v2
+
 package main
 
 import (
@@ -31,7 +33,7 @@ type Node interface {
 	SetSize(size Point)
 	FindTarget(pt Point) (Node, Point)
 	IsVisible() bool
-	Update(dt time.Duration)
+	Update(t time.Time)
 	Draw(gc *gg.Context)
 	OnInputEvent(ev InputEvent)
 }
@@ -41,11 +43,12 @@ type Node interface {
 type nodeEmbed struct {
 	eventHandlerEmbed
 	props.PropertyEmbed
-	wrapper            Node
-	parent             *containerEmbed
-	pos, size, minSize Point
-	isHidden           bool
-	isDisabled         bool
+	wrapper        Node
+	parent         *containerEmbed
+	pos, posOffset Point
+	size, minSize  Point
+	isHidden       bool
+	isDisabled     bool
 }
 
 func (n *nodeEmbed) Init(node Node) {
@@ -57,7 +60,9 @@ func (n *nodeEmbed) Wrappee() *nodeEmbed {
 }
 
 func (n *nodeEmbed) Bounds() Rectangle {
-	return Rectangle{Min: n.pos, Max: n.pos.Add(n.Size())}
+	p1 := n.pos.Sub(n.posOffset)
+	p2 := p1.Add(n.Size())
+	return Rectangle{Min: p1, Max: p2}
 }
 
 func (n *nodeEmbed) Rect() Rectangle {
@@ -70,6 +75,10 @@ func (n *nodeEmbed) Pos() Point {
 
 func (n *nodeEmbed) SetPos(pos Point) {
 	n.pos = pos
+}
+
+func (n *nodeEmbed) SetPosOffset(off Point) {
+	n.posOffset = off
 }
 
 func (n *nodeEmbed) MinSize() Point {
@@ -110,7 +119,7 @@ func (n *nodeEmbed) SetEnabled(e bool) {
 	n.isDisabled = !e
 }
 
-func (n *nodeEmbed) Update(dt time.Duration) {}
+func (n *nodeEmbed) Update(t time.Time) {}
 
 func (n *nodeEmbed) Draw(gc *gg.Context) {
 	n.wrapper.Draw(gc)
@@ -125,7 +134,7 @@ type Window interface {
 	Run()
 	Stop()
 	Init()
-	Update(dt time.Duration)
+	Update(t time.Time)
 	Refresh()
 }
 
@@ -197,7 +206,7 @@ func (w *windowEmbed) Stop() {
 
 func (w *windowEmbed) Init() {}
 
-func (w *windowEmbed) Update(dt time.Duration) {}
+func (w *windowEmbed) Update(t time.Time) {}
 
 func (w *windowEmbed) Refresh() {
 	w.gc.Clear(colors.Black)
@@ -205,6 +214,11 @@ func (w *windowEmbed) Refresh() {
 }
 
 //-----------------------------------------------------------------------------
+
+var (
+	GlobDebug       bool          = false
+	GlobRefreshRate time.Duration = 40 * time.Millisecond
+)
 
 type Application struct {
 	disp      *GC9503CV
@@ -266,16 +280,15 @@ func (a *Application) Stop() {
 }
 
 func (a *Application) drawThread() {
-	dt := 30 * time.Millisecond
-	ticker := time.NewTicker(dt)
+	ticker := time.NewTicker(GlobRefreshRate)
 	defer ticker.Stop()
 	a.win.Init()
-	for range ticker.C {
+	for t := range ticker.C {
 		if !a.isRunning {
 			break
 		}
 		a.Timer.Start()
-		a.win.Update(dt)
+		a.win.Update(t)
 		a.Timer.Lap()
 
 		a.win.Refresh()
@@ -295,18 +308,6 @@ func (a *Application) drawThread() {
 	}
 
 }
-
-/*
-func (a *Application) eventThread() {
-	for mev := range a.mouse.EventQ {
-		if !a.isRunning {
-			break
-		}
-		a.win.OnInputEvent(mev)
-	}
-	a.mouse.Stop()
-}
-*/
 
 //-----------------------------------------------------------------------------
 

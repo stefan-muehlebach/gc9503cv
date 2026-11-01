@@ -50,8 +50,8 @@ func (a *PolygonAnim) Init() {
 	a.gc.SetLineJoinRound()
 }
 
-func (a *PolygonAnim) Update(dt time.Duration) {
-	a.Root.Update(dt)
+func (a *PolygonAnim) Update(t time.Time) {
+	a.Root.Update(t)
 }
 
 func (a *PolygonAnim) Refresh() {
@@ -87,7 +87,7 @@ func NewPolygon(edges int, rect Rectangle) *Polygon {
 	return p
 }
 
-func (p *Polygon) Update(dt time.Duration) {
+func (p *Polygon) Update(t time.Time) {
 	for i, pos := range p.posList {
 		pos.Move(p.velList[i])
 		if pos.X < p.rect.Min.X || pos.X >= p.rect.Max.X {

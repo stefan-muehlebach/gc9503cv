@@ -54,17 +54,17 @@ func (t *Transform[T]) Point(p0 Point[T], dir TransfDirection) (p1 Point[T]) {
 		p1 = p0
 	case Rot090:
 		if dir == Base2Sub {
-			p1 = Pt(t.Rect.Max.Y-p0.Y, p0.X)
+			p1 = Point[T]{t.Rect.Max.Y - p0.Y, p0.X}
 		} else {
-			p1 = Pt(p0.Y, t.Rect.Max.Y-p0.X)
+			p1 = Point[T]{p0.Y, t.Rect.Max.Y - p0.X}
 		}
 	case Rot180:
-		p1 = Pt(t.Rect.Max.X-p0.X, t.Rect.Max.Y-p0.Y)
+		p1 = Point[T]{t.Rect.Max.X - p0.X, t.Rect.Max.Y - p0.Y}
 	case Rot270:
 		if dir == Base2Sub {
-			p1 = Pt(p0.Y, t.Rect.Max.X-p0.X)
+			p1 = Point[T]{p0.Y, t.Rect.Max.X - p0.X}
 		} else {
-			p1 = Pt(t.Rect.Max.X-p0.Y, p0.X)
+			p1 = Point[T]{t.Rect.Max.X - p0.Y, p0.X}
 		}
 	}
 	return p1

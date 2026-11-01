@@ -18,8 +18,8 @@ func Rect[T CoordType](x0, y0, x1, y1 T) Rectangle[T] {
 		y0, y1 = y1, y0
 	}
 	return Rectangle[T]{
-		Pt(x0, y0),
-		Pt(x1, y1),
+		Point[T]{x0, y0},
+		Point[T]{x1, y1},
 	}
 }
 

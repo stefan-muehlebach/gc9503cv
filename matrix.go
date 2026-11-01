@@ -61,9 +61,9 @@ func (v Vector) Mul(k float64) Vector {
 	return Vector{k * v.X, k * v.Y, k * v.Z}
 }
 
-func (v *Vector) Mul2(k float64) {
-	v.X *= k
-	v.Y *= k
+func (v *Vector) Mul2(k float64, u Vector) {
+	v.X = k * u.X
+	v.Y = k * u.Y
 }
 
 func (v Vector) Div(k float64) Vector {
@@ -92,6 +92,24 @@ func (v Vector) Dot(w Vector) float64 {
 	return v.X*w.X + v.Y*w.Y + v.Z*w.Z
 }
 
+func (v Vector) Normalize() Vector {
+	sq := v.Dot(v)
+	inv := 1.0 / math.Sqrt(sq)
+	return Vector{
+		v.X * inv,
+		v.Y * inv,
+		v.Z * inv,
+	}
+}
+
+func (v Vector) Normalize2(w Vector) {
+	sq := w.Dot(w)
+	inv := 1.0 / math.Sqrt(sq)
+	v.X = w.X * inv
+	v.Y = w.Y * inv
+	v.Z = w.Z * inv
+}
+
 func (v Vector) Cross(w Vector) Vector {
 	return Vector{
 		v.Y*w.Z - w.Y*v.Z,
@@ -105,6 +123,60 @@ func (v *Vector) Cross2(u, w Vector) {
 	v.Y = u.Z*w.X - w.Z*u.X
 	v.Z = u.X*w.Y - w.X*u.Y
 }
+
+func (v Vector) TripleProd(u, w Vector) float64 {
+	return v.Cross(u).Dot(w)
+}
+
+//----------------------------------------------------------------------------
+
+/*
+type Segment struct {
+	P, Q Vector
+}
+
+func NewSegment(p, q Vector) Segment {
+	s := Segment{}
+	s.P, s.Q = p, q
+	return s
+}
+
+func (s Segment) Intersects(r Segment) bool {
+	D := (r.P.X-r.Q.X)*(s.Q.Y-s.P.Y) - (r.P.Y-r.Q.Y)*(s.Q.X-s.P.X)
+	if D == 0.0 {
+		return false
+	}
+	Du := (r.P.X-s.P.X)*(s.Q.Y-s.P.Y) - (r.P.Y-s.P.Y)*(s.Q.X-s.P.X)
+	Dv := (r.P.X-r.Q.X)*(r.P.Y-s.P.Y) - (r.P.Y-r.Q.Y)*(r.P.X-s.P.X)
+	u := Du / D
+	v := Dv / D
+	if v < 0 || v >= 1.0 || u < 0 || u >= 1.0 {
+		return false
+	}
+	if u*(r.P.Z-r.Q.Z)-v*(s.P.Z-s.Q.Z) != (r.P.Z - s.P.Z) {
+		return false
+	}
+	return true
+}
+
+func Intersects(sp, sq, rp, rq Vector) bool {
+	D := (rp.X-rq.X)*(sq.Y-sp.Y) - (rp.Y-rq.Y)*(sq.X-sp.X)
+	if D == 0.0 {
+		return false
+	}
+	Du := (rp.X-sp.X)*(sq.Y-sp.Y) - (rp.Y-sp.Y)*(sq.X-sp.X)
+	Dv := (rp.X-rq.X)*(rp.Y-sp.Y) - (rp.Y-rq.Y)*(rp.X-sp.X)
+	u := Du / D
+	v := Dv / D
+	if v < 0 || v >= 1.0 || u < 0 || u >= 1.0 {
+		return false
+	}
+	if u*(rp.Z-rq.Z)-v*(sp.Z-sq.Z) != (rp.Z - sp.Z) {
+		return false
+	}
+	return true
+}
+*/
 
 //----------------------------------------------------------------------------
 
@@ -189,7 +261,7 @@ func (c Matrix) Mul2(a, b Matrix) {
 	c[4] = a[4]*b[0] + a[5]*b[4] + a[6]*b[8]
 	c[5] = a[4]*b[1] + a[5]*b[5] + a[6]*b[9]
 	c[6] = a[4]*b[2] + a[5]*b[6] + a[6]*b[10]
- 	c[7] = a[4]*b[3] + a[5]*b[7] + a[6]*b[11] + a[7]
+	c[7] = a[4]*b[3] + a[5]*b[7] + a[6]*b[11] + a[7]
 	c[8] = a[8]*b[0] + a[9]*b[4] + a[10]*b[8]
 	c[9] = a[8]*b[1] + a[9]*b[5] + a[10]*b[9]
 	c[10] = a[8]*b[2] + a[9]*b[6] + a[10]*b[10]
@@ -278,7 +350,7 @@ func (a Matrix) Inv() Matrix {
 }
 
 func (a Matrix) String() string {
-	return fmt.Sprintf("[%.4v %.4v %.4v %.4v]\n[%.4v %.4v %.4v %.4v]\n" +
+	return fmt.Sprintf("[%.4v %.4v %.4v %.4v]\n[%.4v %.4v %.4v %.4v]\n"+
 		"[%.4v %.4v %.4v %.4v]",
 		a[0], a[1], a[2], a[3],
 		a[4], a[5], a[6], a[7],

@@ -18,15 +18,6 @@ type LayoutManager interface {
 
 //-----------------------------------------------------------------------------
 
-type Orientation int
-
-const (
-	Horizontal Orientation = iota
-	Vertical
-)
-
-//-----------------------------------------------------------------------------
-
 type NullLayout struct {
 	sz Point
 }

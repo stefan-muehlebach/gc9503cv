@@ -28,15 +28,15 @@ import (
 )
 
 const (
-	fbFileName = "/dev/fb2"
+	fbFileName = "/dev/fb0"
 )
 
 // Device represents the frame buffer. It implements the draw.Image interface.
 type Device struct {
 	file       *os.File
-	Pix     []byte
-	Stride      int
-	Rect     image.Rectangle
+	Pix        []byte
+	Stride     int
+	Rect       image.Rectangle
 	colorModel color.Model
 }
 
@@ -48,7 +48,7 @@ type Device struct {
 // The only supported color model for the specified frame buffer is RGB565.
 // After you are done using the Device, call Close on it to unmap the memory and
 // close the framebuffer file.
-func Info(deviceFile string) (error) {
+func Info(deviceFile string) error {
 	file, err := os.OpenFile(deviceFile, os.O_RDWR, os.ModeDevice)
 	if err != nil {
 		return err
@@ -60,23 +60,23 @@ func Info(deviceFile string) (error) {
 
 	log.Printf("fixed screen info:")
 	log.Printf("%+v", fixInfo)
-/*
-	log.Printf("  id")
-	log.Printf("  smem_start")
-	log.Printf("  smem_len")
-	log.Printf("  type")
-	log.Printf("  type_aux")
-	log.Printf("  visual")
-	log.Printf("  xpanstep")
-	log.Printf("  ypanstep")
-	log.Printf("  ywarpstep")
-	log.Printf("  line_length")
-	log.Printf("  mmio_start")
-	log.Printf("  mmio_len")
-	log.Printf("  accel")
-	log.Printf("  capabilities")
-	log.Printf("  reserved")
-*/
+	/*
+		log.Printf("  id")
+		log.Printf("  smem_start")
+		log.Printf("  smem_len")
+		log.Printf("  type")
+		log.Printf("  type_aux")
+		log.Printf("  visual")
+		log.Printf("  xpanstep")
+		log.Printf("  ypanstep")
+		log.Printf("  ywarpstep")
+		log.Printf("  line_length")
+		log.Printf("  mmio_start")
+		log.Printf("  mmio_len")
+		log.Printf("  accel")
+		log.Printf("  capabilities")
+		log.Printf("  reserved")
+	*/
 
 	log.Printf("variable screen info:")
 	log.Printf("%+v", varInfo)
@@ -87,4 +87,3 @@ func Info(deviceFile string) (error) {
 func main() {
 	Info(fbFileName)
 }
-

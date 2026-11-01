@@ -16,9 +16,13 @@ type Point[T CoordType] struct {
 	X, Y T
 }
 
-func Pt[T CoordType](x, y T) Point[T] {
-	return Point[T]{x, y}
+func Pt[T CoordType](p image.Point) Point[T] {
+	return Point[T]{T(p.X), T(p.Y)}
 }
+
+//func Pt[T CoordType](x, y T) Point[T] {
+//	return Point[T]{x, y}
+//}
 
 func (p Point[T]) Add(q Point[T]) Point[T] {
 	return Point[T]{p.X + q.X, p.Y + q.Y}

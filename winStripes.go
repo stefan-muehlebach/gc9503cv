@@ -1,17 +1,18 @@
 package main
 
 import (
-	"github.com/stefan-muehlebach/gc9503cv/geom"
-	"github.com/stefan-muehlebach/gg"
 	"image"
 	"image/color"
 	"math"
 	"time"
+
+	"github.com/stefan-muehlebach/gc9503cv/geom"
+	"github.com/stefan-muehlebach/gg"
 )
 
 type StripeAnim struct {
 	windowEmbed
-	img 		*image.RGBA
+	img         *image.RGBA
 	colorList   []color.RGBA
 	stripeWidth float64
 	off, size   geom.Point[int]
@@ -39,7 +40,7 @@ func (a *StripeAnim) Init() {
 	a.dt = 0.0
 }
 
-func (a *StripeAnim) Update(dt time.Duration) {
+func (a *StripeAnim) Update(t time.Time) {
 	a.dt += 20.0
 }
 

@@ -15,7 +15,7 @@ type Container interface {
 	Add(nl ...Node)
 	Del(n Node)
 	FindTarget(pt Point) (Node, Point)
-	Update(dt time.Duration)
+	Update(t time.Time)
 	Draw(gc *gg.Context)
 	//SetLayoutManager(layoutManager LayoutManager)
 	//LayoutManager() LayoutManager
@@ -81,9 +81,9 @@ func (c *containerEmbed) FindTarget(pt Point) (Node, Point) {
 	return c, pt
 }
 
-func (c *containerEmbed) Update(dt time.Duration) {
+func (c *containerEmbed) Update(t time.Time) {
 	for e := c.childList.Front(); e != nil; e = e.Next() {
-		e.Value.(Node).Update(dt)
+		e.Value.(Node).Update(t)
 	}
 }
 
@@ -120,7 +120,7 @@ func NewGroup() *Group {
 type Panel struct {
 	containerEmbed
 	fillColor, lineColor colors.RGBA
-	IsClipping bool
+	IsClipping           bool
 }
 
 func NewPanel(color colors.RGBA) *Panel {
@@ -136,7 +136,7 @@ func (p *Panel) Draw(gc *gg.Context) {
 	gc.SetLineWidth(1)
 	gc.SetLineColor(p.lineColor)
 	gc.SetFillColor(p.fillColor)
-	gc.DrawRectangle(p.Bounds().Inset(0.5,0.5).AsCoord())
+	gc.DrawRectangle(p.Bounds().Inset(0.5, 0.5).AsCoord())
 	gc.FillStroke()
 
 	if p.IsClipping {

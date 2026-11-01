@@ -57,7 +57,7 @@ func (a *GoColorAnim) Init() {
 	a.t0 = time.Now()
 }
 
-func (a *GoColorAnim) Update(dt time.Duration) {
+func (a *GoColorAnim) Update(t time.Time) {
 	if a.isManual {
 		return
 	}

@@ -13,7 +13,6 @@ import (
 )
 
 type ShuffleAnim struct {
-	// eventHandlerEmbed
 	windowEmbed
 	size       image.Rectangle
 	img        *image.RGBA
@@ -34,7 +33,7 @@ func NewShuffleAnimation(bounds geom.Rectangle[int]) *ShuffleAnim {
 	a.size = image.Rectangle{Max: bounds.Size().ToInt()}
 	a.gc = gg.NewContext(a.bounds.Dx(), a.bounds.Dy())
 	a.img = a.gc.Image().(*image.RGBA)
-	a.fg, err = gg.LoadPNG("images/08_TwoWord.png")
+	a.fg, err = gg.LoadPNG("images/12_TwoWord.png")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -47,10 +46,10 @@ func NewShuffleAnimation(bounds geom.Rectangle[int]) *ShuffleAnim {
 	a.Root.SetSize(bounds.ToFloat().Size())
 
 	a.Root.SetOnClick(func(ev InputEvent) {
-		if ev.Button.IsSet(LeftButton) {
+		switch ev.Button {
+		case LeftButton:
 			a.dt = 30 * time.Millisecond
-		}
-		if ev.Button.IsSet(RightButton) {
+		case RightButton:
 			a.dt = time.Hour
 			for i, _ := range a.idxList {
 				a.idxList[i] = i
@@ -78,7 +77,7 @@ func (a *ShuffleAnim) Init() {
 	a.dt = 30 * time.Millisecond
 }
 
-func (a *ShuffleAnim) Update(dt time.Duration) {
+func (a *ShuffleAnim) Update(t time.Time) {
 	if time.Since(a.t0) > a.dt {
 		rand.Shuffle(len(a.idxList), func(i, j int) {
 			a.idxList[i], a.idxList[j] = a.idxList[j], a.idxList[i]
@@ -89,7 +88,6 @@ func (a *ShuffleAnim) Update(dt time.Duration) {
 }
 
 func (a *ShuffleAnim) Refresh() {
-	//draw.Draw(a.img, a.size, a.bg, image.Point{}, draw.Over)
 	a.gc.Clear(colors.DimGray.Dark(0.6))
 	for i := range a.idxList {
 		srcPt := a.originList[i]

@@ -1,22 +1,26 @@
 package main
 
 import (
+	"log"
+
 	"github.com/stefan-muehlebach/gc9503cv/geom"
 	"github.com/stefan-muehlebach/gg"
 	"github.com/stefan-muehlebach/gg/colors"
-	//"log"
+
 	"math"
-	//"math/rand/v2"
 	"slices"
 	"time"
 )
 
-const (
-	defNumDots = 200
+var (
+	Ex = NewVector(1, 0, 0)
+	Ey = NewVector(0, 1, 0)
+	Ez = NewVector(0, 0, 1)
+
+	LightDir = NewVector(1, -1, 1).Normalize()
 )
 
-type PolyhedronAnim struct {
-	// eventHandlerEmbed
+type PolyhedronWin struct {
 	windowEmbed
 	m0                         Matrix
 	objList                    []Object3D
@@ -25,123 +29,111 @@ type PolyhedronAnim struct {
 	isManual                   bool
 }
 
-func NewPolyhedronAnimation(bounds geom.Rectangle[int],
-	numDots int) *PolyhedronAnim {
+func NewPolyhedronWindow(bounds geom.Rectangle[int]) *PolyhedronWin {
 	var obj *Polyhedron
 
-	a := &PolyhedronAnim{}
+	a := &PolyhedronWin{}
 
 	a.bounds = bounds
 	a.gc = gg.NewContext(a.bounds.Dx(), a.bounds.Dy())
 	rect := a.bounds.Sub(a.bounds.Min).ToFloat()
 	drawStyle := Faces
 
-	if numDots <= 0 {
-		numDots = defNumDots
-	}
-
 	a.Root = NewGroup()
 	a.Root.SetSize(bounds.ToFloat().Size())
 
 	mp := rect.Center()
-	zero := NewVector(0.0, 0.0, 0.0)
-	ex := NewVector(1.0, 0.0, 0.0)
-	ey := NewVector(0.0, 1.0, 0.0)
-	//ez := NewVector(0.0, 0.0, 1.0)
 
 	a.objList = make([]Object3D, 0)
-	//a.objList = append(a.objList, NewSegment(zero, ex, colors.Red, 4.0))
-	//a.objList = append(a.objList, NewSegment(zero, ey, colors.Green, 4.0))
-	//a.objList = append(a.objList, NewSegment(zero, ez, colors.Blue, 4.0))
 
-	obj = NewPolyhedron(Cross, zero, 50.0, colors.GoWhite, 3.0)
-	obj.DrawStyle = drawStyle
-	a.objList = append(a.objList, obj)
-
-	objectList := []ObjectData{Tetraeder, Hexaeder, Oktaeder, Ikosaeder, Dodekaeder}
-	colorList := []colors.RGBA{colors.GoGopherBlue, colors.GoYellow,
-		colors.GoAqua, colors.GoFuchsia, colors.GoLightBlue}
-
-	for i, solid := range objectList {
-		angle := float64(i) * (2.0 * math.Pi / 5.0)
-		dx := ex.Mul(150.0 * math.Sin(angle))
-		dy := ey.Mul(150.0 * math.Cos(angle))
-		v := dx.Add(dy)
-
-		obj = NewPolyhedron(solid, v, 50.0, colorList[i], 3.0)
-		obj.DrawStyle = drawStyle
-		a.objList = append(a.objList, obj)
+	objectList := [][]struct {
+		data  ObjectData
+		color colors.RGBA
+	}{
+		{
+			{HollowCube, colors.DarkGreen},
+			{TestBody, colors.DarkKhaki},
+			//{HiddenFaces2, colors.DarkOrange},
+		},
+		{
+			{Tetraeder, colors.GoGopherBlue},
+			{Hexaeder, colors.GoFuchsia},
+			{Oktaeder, colors.GoTeal},
+			{Dodekaeder, colors.GoYellow},
+			{Ikosaeder, colors.GoAqua},
+		},
+		{
+			{SwissFlag, colors.Red},
+			{SwissCross, colors.White},
+		},
 	}
 
-	/*
-		obj = NewPolyhedron(Tetraeder, ey.Neg().Mul(450.0), 50.0,
-			colors.GoGopherBlue, 3.0)
-		obj.DrawStyle = drawStyle
-		a.objList = append(a.objList, obj)
-
-		obj = NewPolyhedron(Hexaeder, ey.Neg().Mul(300.0), 30.0,
-			colors.GoYellow, 3.0)
-		obj.DrawStyle = drawStyle
-		a.objList = append(a.objList, obj)
-
-		obj = NewPolyhedron(Oktaeder, ey.Neg().Mul(150.0), 50.0,
-			colors.GoAqua, 3.0)
-		obj.DrawStyle = drawStyle
-		a.objList = append(a.objList, obj)
-
-		obj = NewPolyhedron(Ikosaeder, ey.Mul(150.0), 50.0,
-			colors.GoFuchsia, 3.0)
-		obj.DrawStyle = drawStyle
-		a.objList = append(a.objList, obj)
-
-		obj = NewPolyhedron(Dodekaeder, ey.Mul(300.0), 50.0,
-			colors.GoLightBlue, 3.0)
-		obj.DrawStyle = drawStyle
-		a.objList = append(a.objList, obj)
-	*/
-
-	//obj = NewPolyhedron(Staircube, ey.Mul(100.0), 50.0,
-	//	colors.GoWhite, 3.0)
-	//obj.DrawStyle = drawStyle
-	//a.objList = append(a.objList, obj)
-
-	//a.objList = append(a.objList, NewDot(0.0, 0.0, 0.0, colors.Red, 5.0))
-	//a.objList = append(a.objList, NewDot(0.0, 100.0, 0.0, colors.Red, 5.0))
-	//a.objList = append(a.objList, NewDot(0.0, -100.0, 0.0, colors.Red, 5.0))
+	objScale := 50.0
+	objStep := 170.0
+	colLen := float64(len(objectList)-1) * objStep
+	for i, list := range objectList {
+		listLen := float64(len(list)-1) * objStep
+		posX := Ex.Mul(-colLen/2.0 + float64(i)*objStep)
+		for j, dat := range list {
+			posY := Ey.Mul(listLen/2.0 - float64(j)*objStep)
+			obj = NewPolyhedron(dat.data, dat.color, 4.0)
+			obj.Scale(Vector{objScale, objScale, objScale})
+			obj.Translate(posX.Add(posY))
+			obj.DrawStyle = drawStyle
+			a.objList = append(a.objList, obj)
+		}
+	}
 
 	a.m0 = Identity().
-		Mul(Scale(NewVector(1.0, -1.0, 1.0))).
-		Mul(Translate(NewVector(mp.X, -mp.Y, 0.0)))
+		Mul(Translate(NewVector(mp.X, mp.Y, 0.0))).
+		Mul(Scale(NewVector(1.0, -1.0, 1.0)))
 
-	a.dAlpha = math.Pi / 250.0
-	a.dBeta = math.Pi / 180.0
-	a.zoom = 1.0
+	a.dAlpha = math.Pi / 300.0
+	a.dBeta = math.Pi / 225.0
+	a.zoom = 1.5
+	a.isManual = true
 
 	var lastPos Point
 
 	a.Root.SetOnPress(func(ev InputEvent) {
-		a.isManual = true
-		lastPos = ev.Pos
+		switch ev.Button {
+		case LeftButton:
+			a.isManual = true
+			lastPos = ev.Pos
+		}
+	})
+	a.Root.SetOnClick(func(ev InputEvent) {
+		switch ev.Button {
+		case RightButton:
+			a.isManual = false
+		}
 	})
 	a.Root.SetOnDrag(func(ev InputEvent) {
-		dPos := ev.Pos.Sub(lastPos)
-		a.beta += math.Pi * (dPos.X / 300.0)
-		a.alpha += math.Pi * (dPos.Y / 300.0)
-		lastPos = ev.Pos
+		switch ev.Button {
+		case LeftButton:
+			dPos := ev.Pos.Sub(lastPos)
+			a.beta -= math.Pi * (dPos.X / 300.0)
+			a.alpha += math.Pi * (dPos.Y / 300.0)
+			lastPos = ev.Pos
+		}
 	})
 	a.Root.SetOnWheel(func(ev InputEvent) {
-		a.zoom = float64(ev.Wheel) / 10.0
+		if ev.WheelRel < 0 {
+			a.zoom = a.zoom * 0.9
+		} else {
+			a.zoom = a.zoom / 0.9
+		}
 	})
 
 	return a
 }
 
-func (a *PolyhedronAnim) Init() {
+func (a *PolyhedronWin) Init() {
 	a.alpha = 0.0 // math.Pi / 12.0
 	a.beta = 0.0  // math.Pi / 18.0
 }
 
-func (a *PolyhedronAnim) Update(dt time.Duration) {
+func (a *PolyhedronWin) Update(t time.Time) {
 	m := a.m0.
 		Mul(Scale(Vector{a.zoom, a.zoom, a.zoom})).
 		Mul(RotateX(a.alpha)).
@@ -162,12 +154,14 @@ func (a *PolyhedronAnim) Update(dt time.Duration) {
 	}
 }
 
-func (a *PolyhedronAnim) Refresh() {
+func (a *PolyhedronWin) Refresh() {
 	a.gc.Clear(colors.Black)
 	slices.SortFunc(a.objList, func(a, b Object3D) int {
-		if a.Z() < b.Z() {
+		_, aMax := a.Z()
+		_, bMax := b.Z()
+		if aMax < bMax {
 			return -1
-		} else if a.Z() > b.Z() {
+		} else if aMax > bMax {
 			return +1
 		} else {
 			return 0
@@ -178,12 +172,22 @@ func (a *PolyhedronAnim) Refresh() {
 	}
 }
 
+//-----------------------------------------------------------------------
+
+type DrawStyleType int
+
+const (
+	Faces DrawStyleType = iota
+	Edges
+	Vertexes
+)
+
 //----------------------------------------------------------------------------
 
 type Object3D interface {
 	Transform(m Matrix)
 	Draw(gc *gg.Context)
-	Z() float64
+	Z() (float64, float64)
 }
 
 type Node3D interface {
@@ -225,473 +229,14 @@ func (n *node3DEmbed) Rotate(axis AxisType, angle float64) {
 	}
 }
 
-//----------------------------------------------------------------------------
-
-type ObjectData struct {
-	Points []Vector
-	Edges  [][]int
-	Faces  [][]int
-	Holes  [][]int
-}
-
-var (
-	// The golden ratio
-	phi = (math.Sqrt(5) + 1) / 2
-
-	// Bei den folgenden Polyedern (den platonischen Koerpern) wird davon
-	// ausgegangen, dass die Seitenlaenge der begrenzenden Flaechen immer
-	// Laenge = 1 hat. Anschl. wird das Polyeder so positioniert und skaliert
-	// dass der Mittelpunkt des Koerpers (0,0,0) ist und der gesamte Koerper
-	// in einen Wuerfel von (-1,-1,-1) bis (1,1,1) passt.
-	//
-	// Groessen, Punkte und Flaechendefinitionen fuer....
-	// Tetraeder
-	A0 = 1.0 / 2.0
-	B0 = math.Sqrt(2.0) / 4.0
-
-	f0 = 1.0 / max(A0, B0)
-	a0 = f0 * A0
-	b0 = f0 * B0
-
-	Tetraeder = ObjectData{
-		Points: []Vector{
-			Vector{a0, 0, -b0},
-			Vector{-a0, 0, -b0},
-			Vector{0, a0, b0},
-			Vector{0, -a0, b0},
-		},
-		Edges: [][]int{
-			{0, 1, 2, 3},
-			{2, 0, 3, 1},
-		},
-		Faces: [][]int{
-			{0, 1, 2},
-			{0, 3, 1},
-			{0, 2, 3},
-			{1, 3, 2},
-		},
-	}
-
-	// Hexaeder (oder einfach Wuerfel, gell...)
-	A1 = 1.0 / 2.0
-
-	f1 = 1.0 / A1
-	a1 = f1 * A1
-
-	Hexaeder = ObjectData{
-		Points: []Vector{
-			Vector{-a1, -a1, -a1},
-			Vector{-a1, a1, -a1},
-			Vector{a1, a1, -a1},
-			Vector{a1, -a1, -a1},
-			Vector{-a1, -a1, a1},
-			Vector{-a1, a1, a1},
-			Vector{a1, a1, a1},
-			Vector{a1, -a1, a1},
-		},
-		Edges: [][]int{
-			{0, 1, 2, 3, 0},
-			{4, 5, 6, 7, 4},
-			{0, 4}, {1, 5}, {2, 6}, {3, 7},
-		},
-		Faces: [][]int{
-			{0, 1, 2, 3},
-			{0, 4, 5, 1},
-			{1, 5, 6, 2},
-			{2, 6, 7, 3},
-			{3, 7, 4, 0},
-			{4, 7, 6, 5},
-		},
-	}
-
-	// Oktaeder
-	A2 = 1.0 / 2.0
-	E2 = math.Sqrt(2.0) / 2.0
-
-	f2 = 1.0 / max(A2, E2)
-	a2 = f2 * A2
-	e2 = f2 * E2
-
-	Oktaeder = ObjectData{
-		Points: []Vector{
-			Vector{0, 0, -e2},
-			Vector{a2, -a2, 0},
-			Vector{a2, a2, 0},
-			Vector{-a2, a2, 0},
-			Vector{-a2, -a2, 0},
-			Vector{0, 0, e2},
-		},
-		Edges: [][]int{
-			{0, 1}, {0, 2}, {0, 3}, {0, 4},
-			{1, 2}, {2, 3}, {3, 4}, {4, 1},
-			{5, 1}, {5, 2}, {5, 3}, {5, 4},
-		},
-		Faces: [][]int{
-			{0, 2, 1},
-			{0, 3, 2},
-			{0, 4, 3},
-			{0, 1, 4},
-			{1, 2, 5},
-			{2, 3, 5},
-			{3, 4, 5},
-			{4, 1, 5},
-		},
-	}
-
-	// Ikosaeder
-	A3 = 1.0 / 2.0
-	C3 = (1.0 + math.Sqrt(5.0)) / 4.0
-
-	f3 = 1.0 / max(A3, C3)
-	a3 = f3 * A3
-	c3 = f3 * C3
-
-	Ikosaeder = ObjectData{
-		Points: []Vector{
-			Vector{0.0, -a3, -c3}, // 0
-			Vector{0.0, a3, -c3},  // 1
-			Vector{-c3, 0.0, -a3}, // 2
-			Vector{c3, 0.0, -a3},  // 3
-
-			Vector{-a3, -c3, 0.0}, // 4
-			Vector{a3, -c3, 0.0},  // 5
-			Vector{a3, c3, 0.0},   // 6
-			Vector{-a3, c3, 0.0},  // 7
-
-			Vector{-c3, 0.0, a3}, // 8
-			Vector{c3, 0.0, a3},  // 9
-			Vector{0.0, -a3, c3}, // 10
-			Vector{0.0, a3, c3},  // 11
-		},
-		Edges: [][]int{
-			{0, 1, 2, 0, 3, 1},
-			{10, 11, 9, 10, 8, 11},
-			{4, 5, 0, 4, 10, 5},
-			{6, 7, 1, 6, 11, 7},
-			{9, 3, 6, 9, 5, 3},
-			{8, 2, 7, 8, 4, 2},
-		},
-		Faces: [][]int{
-			{0, 1, 3},
-			{0, 3, 5},
-			{0, 5, 4},
-			{0, 4, 2},
-			{0, 2, 1},
-			{1, 2, 7},
-			{2, 8, 7},
-			{2, 4, 8},
-			{4, 10, 8},
-			{4, 5, 10},
-			{5, 9, 10},
-			{5, 3, 9},
-			{3, 6, 9},
-			{3, 1, 6},
-			{1, 7, 6},
-			{8, 10, 11},
-			{10, 9, 11},
-			{9, 6, 11},
-			{6, 7, 11},
-			{7, 8, 11},
-		},
-	}
-
-	// Dodekaeder
-	A4 = 1.0 / 2.0
-	B4 = (1.0 + phi) / 2.0
-	C4 = phi / 2.0
-
-	f4 = 1.0 / max(A4, max(B4, C4))
-	a4 = f4 * A4
-	b4 = f4 * B4
-	c4 = f4 * C4
-
-	Dodekaeder = ObjectData{
-		Points: []Vector{
-			Vector{a4, 0, -b4},    // 0
-			Vector{-a4, 0, -b4},   // 1
-			Vector{c4, c4, -c4},   // 2
-			Vector{-c4, c4, -c4},  // 3
-			Vector{-c4, -c4, -c4}, // 4
-			Vector{c4, -c4, -c4},  // 5
-			Vector{0, b4, -a4},    // 6
-			Vector{0, -b4, -a4},   // 7
-			Vector{b4, -a4, 0},    // 8
-			Vector{b4, a4, 0},     // 9
-			Vector{-b4, a4, 0},    // 10
-			Vector{-b4, -a4, 0},   // 11
-			Vector{0, b4, a4},     // 12
-			Vector{0, -b4, a4},    // 13
-			Vector{c4, c4, c4},    // 14
-			Vector{-c4, c4, c4},   // 15
-			Vector{-c4, -c4, c4},  // 16
-			Vector{c4, -c4, c4},   // 17
-			Vector{a4, 0, b4},     // 18
-			Vector{-a4, 0, b4},    // 19
-		},
-		Edges: [][]int{
-			{0, 1, 4, 7, 5, 0, 2, 6, 3, 1},
-			{18, 19, 16, 13, 17, 18, 14, 12, 15, 19},
-			{5, 8, 17}, {2, 9, 14}, {3, 10, 15}, {4, 11, 16},
-			{7, 13}, {6, 12}, {8, 9}, {10, 11},
-		},
-		Faces: [][]int{
-			{0, 2, 9, 8, 5},
-			{1, 4, 11, 10, 3},
-			{0, 1, 3, 6, 2},
-			{0, 5, 7, 4, 1},
-			{2, 6, 12, 14, 9},
-			{3, 10, 15, 12, 6},
-			{5, 8, 17, 13, 7},
-			{4, 7, 13, 16, 11},
-			{8, 9, 14, 18, 17},
-			{10, 11, 16, 19, 15},
-			{12, 15, 19, 18, 14},
-			{13, 17, 18, 19, 16},
-		},
-	}
-
-	// Schweizerkreuz-Box
-
-	A5 = 16.0
-	B5 = 10.0
-	C5 = 3.0
-	D5 = 3.0
-
-	f5 = 1.0 / max(B5, max(C5, D5))
-	b5 = f5 * B5
-	c5 = f5 * C5
-	d5 = f5 * D5
-
-	Cross = ObjectData{
-		Points: []Vector{
-			Vector{-b5, -c5, -d5}, // 0
-			Vector{-b5, c5, -d5},  // 1
-			Vector{-c5, c5, -d5},  // 2
-			Vector{-c5, b5, -d5},  // 3
-			Vector{c5, b5, -d5},   // 4
-			Vector{c5, c5, -d5},   // 5
-			Vector{b5, c5, -d5},   // 6
-			Vector{b5, -c5, -d5},  // 7
-			Vector{c5, -c5, -d5},  // 8
-			Vector{c5, -b5, -d5},  // 9
-			Vector{-c5, -b5, -d5}, // 10
-			Vector{-c5, -c5, -d5}, // 11
-
-			Vector{-b5, -c5, d5}, // 12
-			Vector{-b5, c5, d5},  // 13
-			Vector{-c5, c5, d5},  // 14
-			Vector{-c5, b5, d5},  // 15
-			Vector{c5, b5, d5},   // 16
-			Vector{c5, c5, d5},   // 17
-			Vector{b5, c5, d5},   // 18
-			Vector{b5, -c5, d5},  // 19
-			Vector{c5, -c5, d5},  // 20
-			Vector{c5, -b5, d5},  // 21
-			Vector{-c5, -b5, d5}, // 22
-			Vector{-c5, -c5, d5}, // 23
-
-			Vector{-c5, c5, -b5},  // 24
-			Vector{c5, c5, -b5},   // 25
-			Vector{c5, -c5, -b5},  // 26
-			Vector{-c5, -c5, -b5}, // 27
-
-			Vector{-c5, c5, b5},  // 28
-			Vector{c5, c5, b5},   // 29
-			Vector{c5, -c5, b5},  // 30
-			Vector{-c5, -c5, b5}, // 31
-		},
-		Edges: [][]int{
-			// Entlang X-Achse
-			{0, 1, 6, 7, 0}, {12, 13, 18, 19, 12}, {0, 12}, {1, 13}, {6, 18},
-			{7, 19},
-			// Entlang Y-Achse
-			{3, 4, 9, 10, 3}, {15, 16, 21, 22, 15}, {3, 15}, {4, 16}, {9, 21},
-			{10, 22},
-			// Entlang Z-Achse
-			{24, 25, 29, 28, 24}, {26, 27, 31, 30, 26}, {25, 26}, {24, 27},
-			{29, 30}, {28, 31},
-		},
-		Faces: [][]int{
-			// Untere Kreuzflaeche
-			{0, 1, 2, 11}, {2, 3, 4, 5}, {5, 6, 7, 8}, {8, 9, 10, 11},
-			// Obere Kreuzflaeche
-			{12, 23, 14, 13}, {14, 17, 16, 15}, {17, 20, 19, 18},
-			{20, 23, 22, 21},
-			// Seitliche Begrenzungsflaechen
-			{1, 0, 12, 13}, {2, 1, 13, 14}, {3, 2, 14, 15}, {4, 3, 15, 16},
-			{5, 4, 16, 17}, {6, 5, 17, 18}, {7, 6, 18, 19}, {8, 7, 19, 20},
-			{9, 8, 20, 21}, {10, 9, 21, 22}, {11, 10, 22, 23},
-			{0, 11, 23, 12},
-			// Unterer Turm
-			{2, 24, 27, 11}, {2, 5, 25, 24}, {5, 8, 26, 25}, {8, 11, 27, 26},
-			{24, 25, 26, 27},
-			// Oberer Turn
-			{14, 23, 31, 28}, {17, 14, 28, 29}, {20, 17, 29, 30},
-			{23, 20, 30, 31}, {28, 31, 30, 29},
-		},
-	}
-
-	// Staircube
-	Staircube = ObjectData{
-		Points: []Vector{
-			Vector{0, 0, 0}, // 0
-			Vector{1, 0, 0}, // 1
-			Vector{1, 1, 0}, // 2
-			Vector{0, 1, 0}, // 3
-
-			Vector{1, 0, 0.2}, // 4
-			Vector{1, 1, 0.2}, // 5
-			Vector{0, 1, 0.2}, // 6
-
-			Vector{0.8, 0, 0.2},   // 7
-			Vector{0.8, 0.8, 0.2}, // 8
-			Vector{0, 0.8, 0.2},   // 9
-
-			Vector{0.8, 0, 0.4},   // 10
-			Vector{0.8, 0.8, 0.4}, // 11
-			Vector{0, 0.8, 0.4},   // 12
-
-			Vector{0.6, 0, 0.4},   // 13
-			Vector{0.6, 0.6, 0.4}, // 14
-			Vector{0, 0.6, 0.4},   // 15
-
-			Vector{0.6, 0, 0.6}, // 16
-			Vector{0.6, 0.6, 0.6},
-			Vector{0, 0.6, 0.6},
-
-			Vector{0.4, 0, 0.6}, // 19
-			Vector{0.4, 0.4, 0.6},
-			Vector{0, 0.4, 0.6},
-
-			Vector{0.4, 0, 0.8}, // 22
-			Vector{0.4, 0.4, 0.8},
-			Vector{0, 0.4, 0.8},
-
-			Vector{0.2, 0, 0.8}, // 25
-			Vector{0.2, 0.2, 0.8},
-			Vector{0, 0.2, 0.8},
-
-			Vector{0.2, 0, 1.0}, // 28
-			Vector{0.2, 0.2, 1.0},
-			Vector{0, 0.2, 1.0},
-
-			Vector{0, 0, 1.0}, // 31
-		},
-		Edges: [][]int{
-			{0, 1, 2, 3, 0},
-			{4, 5, 6}, {7, 8, 9}, {10, 11, 12}, {13, 14, 15}, {16, 17, 18}, {19, 20, 21},
-			{22, 23, 24}, {25, 26, 27}, {28, 29, 30, 31, 28},
-		},
-		Faces: [][]int{
-			{0, 3, 2, 1},
-			{1, 2, 5, 4}, {2, 3, 6, 5},
-			{4, 5, 6, 9, 8, 7},
-			{7, 8, 11, 10}, {8, 9, 12, 11},
-			{10, 11, 12, 15, 14, 13},
-			{13, 14, 17, 16}, {14, 15, 18, 17},
-			{16, 17, 18, 21, 20, 19},
-			{19, 20, 23, 22}, {20, 21, 24, 23},
-			{22, 23, 24, 27, 26, 25},
-			{25, 26, 29, 28}, {26, 27, 30, 29},
-			{28, 29, 30, 31, 28},
-			{0, 1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31},
-			{0, 31, 30, 27, 24, 21, 18, 15, 12, 9, 6, 3},
-		},
-	}
-
-/*
-	Flag = ObjectData{
-		Points: []Vector{
-			Vector{a5, a5, -d5},
-			Vector{-a5, a5, -d5},
-			Vector{-a5, -a5, -d5},
-			Vector{a5, -a5, -d5},
-
-			Vector{a5, a5, d5},
-			Vector{-a5, a5, d5},
-			Vector{-a5, -a5, d5},
-			Vector{a5, -a5, d5},
-
-			Vector{-b5, -c5, -d5},
-			Vector{-b5, c5, -d5},
-			Vector{-c5, c5, -d5},
-			Vector{-c5, b5, -d5},
-			Vector{c5, b5, -d5},
-			Vector{c5, c5, -d5},
-			Vector{b5, c5, -d5},
-			Vector{b5, -c5, -d5},
-			Vector{c5, -c5, -d5},
-			Vector{c5, -b5, -d5},
-			Vector{-c5, -b5, -d5},
-			Vector{-c5, -c5, -d5},
-
-			Vector{-b5, -c5, d5},
-			Vector{-b5, c5, d5},
-			Vector{-c5, c5, d5},
-			Vector{-c5, b5, d5},
-			Vector{c5, b5, d5},
-			Vector{c5, c5, d5},
-			Vector{b5, c5, d5},
-			Vector{b5, -c5, d5},
-			Vector{c5, -c5, d5},
-			Vector{c5, -b5, d5},
-			Vector{-c5, -b5, d5},
-			Vector{-c5, -c5, d5},
-		},
-		Edges: [][]int{
-			{0, 1, 2, 3, 0},
-			{4, 5, 6, 7, 4},
-			{0, 4}, {1, 5}, {2, 6}, {3, 7},
-		},
-		Faces: [][]int{
-			// Vorder- und Rueckseite
-			{3, 2, 1, 0},
-			{4, 5, 6, 7},
-			// Umlaufende Seitenflaechen
-			{0, 1, 5, 4},
-			{1, 2, 6, 5},
-			{2, 3, 7, 6},
-			{3, 0, 4, 7},
-			// Begrenzungsflaechen zum kreuzfoermigen Loch
-			{8, 9, 21, 20},
-			{9, 10, 22, 21},
-			{10, 11, 23, 22},
-			{11, 12, 24, 23},
-			{12, 13, 25, 24},
-			{13, 14, 26, 25},
-			{14, 15, 27, 26},
-			{15, 16, 28, 27},
-			{16, 17, 29, 28},
-			{17, 18, 30, 29},
-			{18, 19, 31, 30},
-			{19, 8, 20, 31},
-		},
-		Holes: [][]int{
-			// Kreuzfoermige Ausschnitte in Vorder- und Rueckseite
-			{19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8},
-			{20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31},
-		},
-	}
-*/
-)
-
-//-----------------------------------------------------------------------
-
-type DrawStyleType int
-
-const (
-	Faces DrawStyleType = iota
-	Edges
-	Corners
-)
-
 //-----------------------------------------------------------------------
 
 type Polyhedron struct {
 	node3DEmbed
-	Pts, PtsT  []Vector
-	Faces      []*Face
-	Edges      [][]int
+	Pts, PtsT []Vector
+	Faces     []*Face
+	Shapes    []Object3D
+
 	ZMin, ZMax float64
 	LineWidth  float64
 	LineColor  colors.RGBA
@@ -699,31 +244,34 @@ type Polyhedron struct {
 	DrawStyle  DrawStyleType
 }
 
-func NewPolyhedron(data ObjectData, pos Vector,
-	size float64, color colors.RGBA, lineWidth float64) *Polyhedron {
+func NewPolyhedron(data ObjectData, color colors.RGBA, lineWidth float64) *Polyhedron {
 	o := &Polyhedron{}
 	o.LineWidth = lineWidth
-	o.LineColor = color
-	o.FillColor = color.Dark(0.1)
+	o.LineColor = color.Bright(0.3)
+	o.FillColor = color
 	o.Pts = make([]Vector, len(data.Points))
 	o.PtsT = make([]Vector, len(data.Points))
-	o.Edges = make([][]int, len(data.Edges))
-	o.Faces = make([]*Face, len(data.Faces))
+	o.Faces = make([]*Face, len(data.TrigFaces)+len(data.SimpleFaces))
+	o.Shapes = make([]Object3D, 0)
 
 	o.m = Identity()
-	o.Scale(Vector{size, size, size})
-	o.Translate(pos)
+	//o.Scale(Vector{size, size, size})
+	//o.Translate(pos)
 	for i, pt := range data.Points {
 		o.Pts[i] = pt
 	}
-	for i, edge := range data.Edges {
-		o.Edges[i] = edge
+	idx := 0
+	if len(data.SimpleFaces) > 0 {
+		for _, convFace := range data.SimpleFaces {
+			o.Faces[idx] = NewSimpleFace(o, convFace)
+			idx++
+		}
 	}
-	for i, face := range data.Faces {
-		o.Faces[i] = NewFace(o, face, color, lineWidth)
-	}
-	for i, holes := range data.Holes {
-		o.Faces[i].Hole = holes
+	if len(data.TrigFaces) > 0 {
+		for _, faceData := range data.TrigFaces {
+			o.Faces[idx] = NewTrigFace(o, faceData)
+			idx++
+		}
 	}
 	return o
 }
@@ -747,38 +295,45 @@ func (o *Polyhedron) Transform(m Matrix) {
 	}
 }
 
-func (o *Polyhedron) Z() float64 {
-	return o.ZMax
-}
-
 func (o *Polyhedron) Draw(gc *gg.Context) {
 	switch o.DrawStyle {
 	case Faces:
-		slices.SortFunc(o.Faces, func(a, b *Face) int {
-			if a.Z() < b.Z() {
+		slices.SortFunc(o.Shapes, func(a, b Object3D) int {
+			_, aMax := a.Z()
+			_, bMax := b.Z()
+			if aMax < bMax {
 				return -1
-			} else if a.Z() > b.Z() {
+			} else if aMax > bMax {
 				return +1
 			} else {
 				return 0
 			}
 		})
-		for _, face := range o.Faces {
-			face.Draw(gc)
+		for _, shape := range o.Shapes {
+			switch obj := shape.(type) {
+			case *Trig:
+				obj.Draw(gc)
+			}
 		}
 	case Edges:
-		gc.SetLineWidth(o.LineWidth)
-		gc.SetLineColor(o.LineColor)
-		for _, edge := range o.Edges {
-			pt := o.PtsT[edge[0]]
-			gc.MoveTo(pt.X, pt.Y)
-			for _, idx := range edge[1:] {
-				pt := o.PtsT[idx]
-				gc.LineTo(pt.X, pt.Y)
+		slices.SortFunc(o.Shapes, func(a, b Object3D) int {
+			_, aMax := a.Z()
+			_, bMax := b.Z()
+			if aMax < bMax {
+				return -1
+			} else if aMax > bMax {
+				return +1
+			} else {
+				return 0
 			}
-			gc.Stroke()
+		})
+		for _, shape := range o.Shapes {
+			switch obj := shape.(type) {
+			case *Segment:
+				obj.Draw(gc)
+			}
 		}
-	case Corners:
+	case Vertexes:
 		gc.SetFillColor(o.LineColor)
 		for _, pt := range o.PtsT {
 			gc.DrawPoint(pt.X, pt.Y, 2.0)
@@ -787,160 +342,286 @@ func (o *Polyhedron) Draw(gc *gg.Context) {
 	}
 }
 
+func (o *Polyhedron) Z() (float64, float64) {
+	return o.ZMin, o.ZMax
+}
+
 //-----------------------------------------------------------------------
 
 type Face struct {
 	o           *Polyhedron
-	Idx         []int
-	Hole        []int
 	Norm, NormT Vector
-	ZMax, ZMin  float64
+	ZMin, ZMax  float64
 	LineWidth   float64
 	LineColor   colors.RGBA
 	FillColor   colors.RGBA
 }
 
-func NewFace(o *Polyhedron, idx []int, color colors.RGBA,
-	lineWidth float64) *Face {
+// Es wird aktuell nicht geprueft, ob die einzelnen Dreiecke alle in
+// einer Ebene liegen und nach der gleichen Seite ausgerichtet sind.
+func NewTrigFace(o *Polyhedron, face FaceData) *Face {
+	f := &Face{}
+	f.o = o
+
+	// Berechne und hinterlege die Flaechennormale aufgrund der ersten
+	// Dreiecksflaeche
+	an := o.Pts[face.Trigs[0][1]].Sub(o.Pts[face.Trigs[0][0]])
+	bn := o.Pts[face.Trigs[0][2]].Sub(o.Pts[face.Trigs[0][0]])
+	f.Norm = an.Cross(bn).Normalize()
+
+	// Erstelle Linien-Segmente (gem. 'Edges')
+	segments := []*Segment{}
+	for _, polyline := range face.Edges {
+		for i := 1; i < len(polyline); i++ {
+			idxA, idxB := polyline[i-1], polyline[i]
+			if idxA > idxB {
+				idxA, idxB = idxB, idxA
+			}
+			segments = append(segments, &Segment{
+				Face: f, Idxs: [2]int{idxA, idxB},
+			})
+		}
+	}
+
+	for _, trigIdxs := range face.Trigs {
+		trig := &Trig{Face: f, Idxs: [3]int(trigIdxs)}
+		trig.findEdges(segments)
+		o.Shapes = append(o.Shapes, trig)
+	}
+	f.LineWidth = o.LineWidth
+	f.LineColor = o.LineColor
+	f.FillColor = o.FillColor
+
+	return f
+}
+
+// Da die Fliesskomma-Rechnerei mit Fehlern behaftet ist und in der
+// Geometrie solche Fehler sofort zur Spassbremse werden, hält die
+// Konstante 'Epsilon' fest, was wir in unserer Umgebung als 'die
+// betragsmässig kleinste Zahl' betrachten. Alle Zahlen,
+// deren Betraege kleiner sind als Epsilon, sind gleich Null.
+const (
+	Epsilon = 1e-6
+)
+
+func NewSimpleFace(o *Polyhedron, face []int) *Face {
+	if GlobDebug {
+		log.Printf("New simple face (face: %+v)", face)
+	}
 	f := &Face{}
 
 	f.o = o
-	f.Idx = idx
-	f.LineWidth = lineWidth
-	f.LineColor = color
-	f.FillColor = color.Dark(0.1)
+	//for i := 0; i < len(face); i++ {
+	//	idxA := face[i]
+	//	idxB := face[(i+1)%len(face)]
+	//	o.Shapes = append(o.Shapes, &Segment{Face: f, Idxs: [2]int{idxA, idxB}})
+	//}
 
-	v1 := o.Pts[idx[2]].Sub(o.Pts[idx[1]])
-	v2 := o.Pts[idx[0]].Sub(o.Pts[idx[1]])
-	f.Norm = v1.Cross(v2)
+	// Take the segment before and after point with index 0 on 'face'
+	// to construct the normal vector on this face.
+	an := o.Pts[face[1]].Sub(o.Pts[face[0]])
+	bn := o.Pts[face[len(face)-1]].Sub(o.Pts[face[0]])
+	f.Norm = an.Cross(bn).Normalize()
+
+	// Check if all points of a face are in the same plane.
+	for l := 1; l < len(face)-1; l++ {
+		c := o.Pts[face[l]].Sub(o.Pts[face[0]])
+		if prod := an.TripleProd(bn, c); prod > Epsilon {
+			if GlobDebug {
+				log.Printf("  point %d (%d) not in plane with the others (%f)",
+					l, face[l], prod)
+			}
+			return nil
+		}
+	}
+
+	i, j, k := 0, 1, 2
+	for k != i && j != i {
+		if GlobDebug {
+			log.Printf("  i,j,k: %d, %d, %d, (%d, %d, %d)", i, j, k,
+				face[i], face[j], face[k])
+		}
+		if !f.IsConvex(o.Pts[face[i]], o.Pts[face[j]], o.Pts[face[k]]) {
+			if GlobDebug {
+				log.Printf("  triple product is negativ at point %d (%d)",
+					j, face[j])
+			}
+			i, j, k = j, k, nextPoint(face, k)
+			continue
+		}
+
+		trig := &Trig{Face: f, Idxs: [3]int{face[i], face[j], face[k]}}
+		if (i+1)%len(face) == j {
+			trig.Edges = append(trig.Edges, &Segment{
+				Face: f, Idxs: [2]int{face[i], face[j]},
+			})
+		}
+		if (j+1)%len(face) == k {
+			trig.Edges = append(trig.Edges, &Segment{
+				Face: f, Idxs: [2]int{face[j], face[k]},
+			})
+		}
+		if (k+1)%len(face) == i {
+			trig.Edges = append(trig.Edges, &Segment{
+				Face: f, Idxs: [2]int{face[k], face[i]},
+			})
+		}
+		o.Shapes = append(o.Shapes, trig)
+
+		face[j] = -1
+		j, k = k, nextPoint(face, k)
+		if GlobDebug {
+			log.Printf("  face: %+v", face)
+		}
+	}
+
+	f.LineWidth = o.LineWidth
+	f.LineColor = o.LineColor
+	f.FillColor = o.FillColor
 
 	return f
+}
+
+func nextPoint(face []int, last int) int {
+	for idx := (last + 1) % len(face); idx != last; idx = (idx + 1) % len(face) {
+		if face[idx] >= 0 {
+			return idx
+		}
+	}
+	return -1
+}
+
+func (f *Face) IsVisible() bool {
+	return f.NormT.Z > 0
+}
+
+func (f *Face) IsConvex(a, b, c Vector) bool {
+	x := b.Sub(a)
+	y := c.Sub(b)
+	prod := x.TripleProd(y, f.Norm)
+	return prod > 0.0
 }
 
 func (f *Face) Transform(m Matrix) {
 	f.NormT = m.TransformLinear(f.Norm)
 }
 
-func (f *Face) Z() float64 {
-	f.ZMin = +math.MaxFloat64
-	f.ZMax = -math.MaxFloat64
-	for _, idx := range f.Idx {
-		z := f.o.PtsT[idx].Z
-		if z < f.ZMin {
-			f.ZMin = z
-		}
-		if z > f.ZMax {
-			f.ZMax = z
-		}
-	}
-	return f.ZMax
+func (f *Face) Z() (float64, float64) {
+	return f.ZMin, f.ZMax
 }
 
-func (f *Face) Draw(gc *gg.Context) {
-	if f.NormT.Z < 0 {
-		return
-	}
-	gc.SetLineWidth(f.LineWidth)
-	gc.SetLineColor(f.LineColor)
-	gc.SetFillColor(f.FillColor.Dark((1.0 - f.NormT.Z/f.NormT.Abs()) / 2.0))
-	gc.MoveTo(f.o.PtsT[f.Idx[0]].X, f.o.PtsT[f.Idx[0]].Y)
-	for _, idx := range f.Idx[1:] {
-		gc.LineTo(f.o.PtsT[idx].X, f.o.PtsT[idx].Y)
-	}
-	gc.ClosePath()
-	if len(f.Hole) > 0 {
-		gc.SetFillRule(gg.FillRuleEvenOdd)
-		gc.MoveTo(f.o.PtsT[f.Hole[0]].X, f.o.PtsT[f.Hole[0]].Y)
-		for _, idx := range f.Hole[1:] {
-			gc.LineTo(f.o.PtsT[idx].X, f.o.PtsT[idx].Y)
-		}
-		gc.ClosePath()
-	}
-	gc.FillStroke()
-}
+func (f *Face) Draw(gc *gg.Context) {}
 
 //-----------------------------------------------------------------------
 
-/*
-type Dot struct {
-	Pt, PtT Vector
-	Color   colors.RGBA
-	Size    float64
+// Damit wird ein Dreieck (Triangle) als Runtime-Datenstrukut beschrieben
+type Trig struct {
+	// Pointer auf die Flaeche, bei welcher dieses Dreieck angesiedelt ist.
+	Face *Face
+	// Ein Dreieck kann max. an allen drei Seiten eine Flaechenbegrenzung
+	// haben (genau dann, wenn die Flaeche nur durch das Dreieck bestimmt
+	// ist) und min. an keiner Seite (genau dann, wenn das Dreieck an allen
+	// drei Seiten von weiteren Dreiecken dieser Flaeche umschlossen wird).
+	// Regel: der Slice 'Edges' wird mit aufsteigendem Index durchlaufen;
+	// beim ersten 'nil'-Eintrag, wird die Verarbeitung abgebrochen.
+	Edges []*Segment
+	// Dies schliesslich sind die Indizes der Punkte, welche dieses Dreieck
+	// ausmachen. Die Zahlen beziehen sich auf den Slice 'Pts', resp. 'PtsT'
+	// im darueberliegenden 'Polyhedron'-Objekt.
+	Idxs TrigData
 }
 
-func NewDot(x, y, z float64, color colors.RGBA, size float64) *Dot {
-	d := &Dot{}
-	d.Pt = Vector{x, y, z}
-	d.Color = color
-	d.Size = size
-	return d
+func (t *Trig) Transform(m Matrix) {
+	for _, edge := range t.Edges {
+		edge.finalDraw = false
+	}
 }
 
-func (d *Dot) Transform(m Matrix) {
-	d.PtT = m.TransformAffine(d.Pt)
+func (t *Trig) Draw(gc *gg.Context) {
+	if !t.Face.IsVisible() {
+		return
+	}
+	ptsT := t.Face.o.PtsT
+	gc.SetLineWidth(1.0)
+	//col := t.Face.FillColor
+	col := t.Face.FillColor.Dark((1.0 - t.Face.NormT.Z/t.Face.NormT.Abs()) / 2.0)
+	if GlobDebug {
+		gc.SetLineColor(colors.Crimson)
+	} else {
+		gc.SetLineColor(col)
+	}
+	gc.SetFillColor(col)
+	gc.MoveTo(ptsT[t.Idxs[0]].X, ptsT[t.Idxs[0]].Y)
+	gc.LineTo(ptsT[t.Idxs[1]].X, ptsT[t.Idxs[1]].Y)
+	gc.LineTo(ptsT[t.Idxs[2]].X, ptsT[t.Idxs[2]].Y)
+	gc.ClosePath()
+	gc.FillStroke()
+
+	for _, edge := range t.Edges {
+		edge.Draw(gc)
+	}
 }
 
-func (d *Dot) Z() float64 {
-	return d.PtT.Z
+func (t *Trig) Z() (float64, float64) {
+	ptsT := t.Face.o.PtsT
+	zMin := min(ptsT[t.Idxs[0]].Z, min(ptsT[t.Idxs[1]].Z,
+		ptsT[t.Idxs[2]].Z))
+	zMax := max(ptsT[t.Idxs[0]].Z, max(ptsT[t.Idxs[1]].Z,
+		ptsT[t.Idxs[2]].Z))
+	return zMin, zMax
 }
 
-func (d *Dot) Draw(gc *gg.Context) {
-	dark := Map(d.PtT.Z, -200.0, 200.0, 0.7, 0.2)
-	gc.SetFillColor(d.Color.Dark(dark))
-	gc.DrawPoint(d.PtT.X, d.PtT.Y, d.Size)
-	gc.Fill()
+func (t *Trig) findEdges(segments []*Segment) {
+	pairs := [][2]int{
+		{t.Idxs[0], t.Idxs[1]},
+		{t.Idxs[1], t.Idxs[2]},
+		{t.Idxs[0], t.Idxs[2]},
+	}
+	for _, pair := range pairs {
+		idxA, idxB := pair[0], pair[1]
+		if idxA > idxB {
+			idxA, idxB = idxB, idxA
+		}
+		for _, segment := range segments {
+			if idxA == segment.Idxs[0] && idxB == segment.Idxs[1] {
+				t.Edges = append(t.Edges, segment)
+			}
+		}
+	}
 }
-*/
 
 //-----------------------------------------------------------------------
 
 type Segment struct {
-	Pts, PtsT [2]Vector
-	Color     colors.RGBA
-	Width     float64
+	Face      *Face
+	Idxs      [2]int
+	finalDraw bool
 }
 
-func NewSegment(p0, p1 Vector, color colors.RGBA, width float64) *Segment {
-	s := &Segment{}
-	s.Pts[0] = p0
-	s.Pts[1] = p1
-	s.Color = color
-	s.Width = width
-	return s
-}
-
-func (s *Segment) Transform(m Matrix) {
-	s.PtsT[0] = m.TransformAffine(s.Pts[0])
-	s.PtsT[1] = m.TransformAffine(s.Pts[1])
-}
-
-func (s *Segment) Z() float64 {
-	return max(s.PtsT[0].Z, s.PtsT[1].Z)
-}
+func (s *Segment) Transform(m Matrix) {}
 
 func (s *Segment) Draw(gc *gg.Context) {
-	gc.SetLineColor(s.Color)
-	gc.SetLineWidth(s.Width)
-	gc.DrawLine(s.PtsT[0].X, s.PtsT[0].Y, s.PtsT[1].X, s.PtsT[1].Y)
+	if !s.finalDraw {
+		s.finalDraw = true
+		return
+	}
+	ptsT := s.Face.o.PtsT
+	gc.SetLineWidth(s.Face.LineWidth)
+	col := s.Face.LineColor
+	// col := s.Face.LineColor.Dark((1.0 -
+	//     s.Face.NormT.Z/s.Face.NormT.Abs()) / 4.0)
+	gc.SetLineColor(col)
+	gc.DrawLine(ptsT[s.Idxs[0]].X, ptsT[s.Idxs[0]].Y,
+		ptsT[s.Idxs[1]].X, ptsT[s.Idxs[1]].Y)
 	gc.Stroke()
 }
 
-//-----------------------------------------------------------------------
-
-/*
-func NewCloud(x, y, z, w float64, numObjs int, color colors.RGBA,
-	size float64) []Object3D {
-
-	dots := make([]Object3D, 0)
-	for range numObjs {
-		px := rand.NormFloat64()*w + x
-		py := rand.NormFloat64()*w + y
-		pz := rand.NormFloat64()*w + z
-		dots = append(dots, NewDot(px, py, pz, color, size))
-	}
-	return dots
+func (s *Segment) Z() (float64, float64) {
+	ptsT := s.Face.o.PtsT
+	zMin := min(ptsT[s.Idxs[0]].Z, ptsT[s.Idxs[1]].Z)
+	zMax := max(ptsT[s.Idxs[0]].Z, ptsT[s.Idxs[1]].Z)
+	return zMin, zMax
 }
-*/
 
 //-----------------------------------------------------------------------
 

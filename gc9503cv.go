@@ -15,15 +15,13 @@ import (
 // Folgende Eintraege sind in der Datei [config.txt] zu machen, damit der
 // RaspberryPi den GPIO als Display Parallel Interface (DPI) verwendet.
 //
+//	dtoverlay=vc4-kms-v3d,noaudio
 //	gpio=0-21=a2
-//
 //	dtoverlay=vc4-kms-dpi-generic
 //	dtparam=clock-frequency=24000000,rotate=0
 //	dtparam=hactive=480,hsync=5,hbp=20,hfp=20
 //	dtparam=vactive=960,vsync=5,vbp=10,vfp=10
 //	dtparam=width-mm=55,height-mm=147
-//
-//	dtoverlay=vc4-kms-v3d
 const (
 	defMOSIPinName = "GPIO23"
 	defSCKPinName  = "GPIO24"
@@ -220,57 +218,10 @@ func (d *GC9503CV) Reset(hw bool) {
 	}
 }
 
-// Mit der Funktion PartialArea kann man den Bereich einschraenken, der
-// mit dem naechsten Refresh gezeichnet wird.
-// TO DO: mit der Umstellung auf das RGB-Interface dauert das Senden des
-// gesamten Bildschirminhaltes nur noch ein Bruchteil dessen, was fuer
-// das Senden via SPI-Interface notwendig war. Es fragt sich, ob es diese
-// Funktion ueberhaupt noch braucht.
-/*
-func (d *GC9503CV) PartialArea(rect image.Rectangle) {
-	buffer := []byte{0, 0, 0, 0}
-	startRow := int16(d.dispBounds.Min.Y - rect.Min.Y)
-	endRow := int16(d.dispBounds.Max.Y - rect.Min.Y)
-	buffer[0] = byte((startRow >> 8) & 0xff)
-	buffer[1] = byte(startRow & 0x00ff)
-	buffer[2] = byte((endRow >> 8) & 0xff)
-	buffer[3] = byte(endRow & 0x00ff)
-	d.Cmd(PARTON)
-	d.Cmd(PARTAREA)
-	d.DataArray(buffer)
-}
-*/
-
-// Mit Matrix kann eine Transformationsmatrix bezogen werden, welche alle
-// Transformationen enthaelt, um Zeichenkoordinaten in Display-Koordianten
-// umzurechnen.
-// TO DO: mit der neuen Transformation in der Funktion Convert des Objektes
-// ILIImage wird diese Transformation eigentlich nicht mehr benoetigt.
-/*
-func (d *GC9503CV) Matrix() *geom.Matrix {
-	m := geom.Identity()
-	switch d.rot {
-	case geom.Rot000:
-	case geom.Rot090:
-		m = m.Translate(d.dispBounds.SW().ToFloat())
-		m = m.Rotate(3.0 * math.Pi / 2.0)
-	case geom.Rot180:
-		m = m.Translate(d.dispBounds.SE().ToFloat())
-		m = m.Rotate(math.Pi)
-	case geom.Rot270:
-		m = m.Translate(d.dispBounds.NE().ToFloat())
-		m = m.Rotate(math.Pi / 2.0)
-	default:
-		log.Fatal("unknown rotation!")
-	}
-	offset := d.DrawBounds().Min
-	m = m.Translate(offset.ToFloat())
-	return m
-}
-*/
-
 func (d *GC9503CV) Send(img *iliimg.ILIImage) {
-	//log.Printf("Bounds of the image: %v", img.Bounds())
+	//if GlobDebug {
+	//	log.Printf("GC9503.Send: bounds of the image: %v", img.Bounds())
+	//}
 	if d.fb.Bounds() != img.Bounds() {
 		log.Fatal("By now, image and screen must have equal size")
 	}

@@ -103,8 +103,8 @@ func (a *PainterWin) Init() {
 	a.gc.SetLineJoinRound()
 }
 
-func (a *PainterWin) Update(dt time.Duration) {
-	a.Root.Update(dt)
+func (a *PainterWin) Update(t time.Time) {
+	a.Root.Update(t)
 }
 
 func (a *PainterWin) Refresh() {
@@ -149,7 +149,7 @@ func NewDot(pos Point, color colors.RGBA) *Dot {
 	return d
 }
 
-func (d *Dot) Update(dt time.Duration) {}
+func (d *Dot) Update(t time.Time) {}
 
 func (d *Dot) Draw(gc *gg.Context) {
 	mp := d.Bounds().Center()
@@ -182,7 +182,7 @@ func NewLine(p1, p2 Point, color colors.RGBA) *Line {
 	return l
 }
 
-func (l *Line) Update(dt time.Duration) {}
+func (l *Line) Update(t time.Time) {}
 
 func (l *Line) Draw(gc *gg.Context) {
 	if l.isActive {

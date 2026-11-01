@@ -13,6 +13,44 @@ import (
 )
 
 //-----------------------------------------------------------------------------
+//
+// In diesem File befinden sich saemtliche Widgets (Window-Objects) welche
+// dieses Package zur Verfuegung stellt. Konkret:
+//
+// - Label
+// - Button
+// - TextButton
+// - IconButton
+// - Radiobox		(abstrakter Typ fuer RadioButton und Checkbox)
+// - Slider
+// - Scrollbar
+//
+
+// Der Typ AlignType dient der Ausrichtung von Text.
+type AlignType int
+
+const (
+	AlignLeft AlignType = 1 << iota
+	AlignCenter
+	AlignRight
+	AlignTop
+	AlignMiddle
+	AlignBottom
+
+	horizontalAlignMask = (AlignLeft | AlignCenter | AlignRight)
+	verticalAlignMask   = (AlignTop | AlignMiddle | AlignBottom)
+)
+
+// Mit dem Typ Orientation koennen horizontale Ausrichtungen gegenueber
+// vertikalen abgegrenzt werden.
+type Orientation int
+
+const (
+	Horizontal Orientation = iota
+	Vertical
+)
+
+//-----------------------------------------------------------------------------
 
 type Label struct {
 	nodeEmbed
@@ -103,21 +141,6 @@ func (b *Button) OnInputEvent(ev InputEvent) {
 
 //-----------------------------------------------------------------------------
 
-// Der Typ AlignType dient der Ausrichtung von Text.
-type AlignType int
-
-const (
-	AlignLeft AlignType = 1 << iota
-	AlignCenter
-	AlignRight
-	AlignTop
-	AlignMiddle
-	AlignBottom
-
-	horizontalAlignMask = (AlignLeft | AlignCenter | AlignRight)
-	verticalAlignMask   = (AlignTop | AlignMiddle | AlignBottom)
-)
-
 type TextButton struct {
 	Button
 	fontFace font.Face
@@ -184,6 +207,31 @@ func (b *IconButton) OnInputEvent(ev InputEvent) {
 	if ev.Type == ClickEvent {
 		b.checked = !b.checked
 	}
+}
+
+//-----------------------------------------------------------------------------
+
+type TabButton struct {
+	Button
+	fontFace font.Face
+	label    string
+	idx      int
+	data     binding.Int
+}
+
+func NewTabButton(label string, idx int) *TabButton {
+	b := &TabButton{}
+	b.Init(b)
+	b.InitProp("TabButton")
+	b.fontFace, _ = fonts.NewFace(b.BoldFont(), b.FontSize())
+	b.label = label
+	w := fix2flt(font.MeasureString(b.fontFace, b.label)) +
+		(2.0 * b.InnerPadding())
+	h := b.Height()
+	b.SetMinSize(Point{w, h})
+	b.data = binding.NewInt()
+	b.idx = idx
+	return b
 }
 
 //-----------------------------------------------------------------------------

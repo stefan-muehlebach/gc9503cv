@@ -1,3 +1,5 @@
+//go:build !v2
+
 package main
 
 // Konsequenterweise wurde auch fuer diese Funktionalitaet ein Interface

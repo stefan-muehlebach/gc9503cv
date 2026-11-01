@@ -4,15 +4,16 @@ package main
 
 import (
 	"flag"
-	"os"
 	"fmt"
-	"log"
 	"image"
 	"image/draw"
 	_ "image/png"
+	"log"
+	"os"
+
 	"github.com/stefan-muehlebach/gc9503cv/framebuffer"
-	"github.com/stefan-muehlebach/gc9503cv/iliimg"
 	"github.com/stefan-muehlebach/gc9503cv/geom"
+	"github.com/stefan-muehlebach/gc9503cv/iliimg"
 )
 
 func main() {
@@ -21,9 +22,13 @@ func main() {
 	var rotate geom.RotationType
 
 	flag.IntVar(&count, "count", 1, "number of iterations")
-	flag.IntVar(&method, "method", 0, "technology for copying")
+	flag.IntVar(&method, "method", 1, "technology for copying, (1: Draw-Over, 2: Draw-Src, 3: Convert-Copy")
 	flag.Var(&rotate, "rotate", "rotation of the screen")
 	flag.Parse()
+
+	if len(flag.Args()) != 1 {
+		log.Fatalf("usage: %s <png-file>", os.Args[0])
+	}
 
 	fb, err := framebuffer.Open("/dev/fb0")
 	if err != nil {
@@ -41,27 +46,25 @@ func main() {
 
 	//img := image.NewRGBA(fb.Bounds())
 	ili := iliimg.NewILIImage(fb.Bounds())
-	//off := image.Point{60, 0}
+	offset := image.Point{60, 0}
+	size := image.Point{360, 960}
+	imgBounds := image.Rectangle{Min: offset, Max: size.Add(offset)}
 
 	watch := NewStopwatch("Framebuffer")
-	
+
 	for range count {
 		switch method {
-		case 0:
-			watch.Start()
-			draw.Draw(fb, image.Rectangle{Min: image.Point{60, 0},
-				Max: image.Point{420, 960}}, img, image.Point{0, 0},
-				draw.Over)
-			watch.Stop()
 		case 1:
 			watch.Start()
-			draw.Draw(fb, image.Rectangle{Min: image.Point{60, 0},
-				Max: image.Point{420, 960}}, img, image.Point{0, 0},
-				draw.Src)
+			draw.Draw(fb, imgBounds, img, image.Point{0, 0}, draw.Over)
 			watch.Stop()
 		case 2:
 			watch.Start()
-			ili.Convert(img.(*image.RGBA), rotate)
+			draw.Draw(fb, imgBounds, img, image.Point{0, 0}, draw.Src)
+			watch.Stop()
+		case 3:
+			watch.Start()
+			ili.Convert(img.(*image.NRGBA), rotate)
 			copy(fb.Pix, ili.Pix)
 			watch.Stop()
 		default:
@@ -72,4 +75,3 @@ func main() {
 	fmt.Printf("watch: %v  (%v .. %v)\n", watch.Avg(0), watch.Min(0), watch.Max(0))
 	fb.Close()
 }
-

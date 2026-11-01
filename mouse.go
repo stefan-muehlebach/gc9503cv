@@ -1,3 +1,5 @@
+//go:build !v2
+
 package main
 
 import (
@@ -7,7 +9,7 @@ import (
 	"time"
 
 	//"fmt"
-	"github.com/holoplot/go-evdev"
+	evdev "github.com/mikegio27/go-evdev"
 	"github.com/stefan-muehlebach/gc9503cv/geom"
 )
 
@@ -134,7 +136,7 @@ type Mouse struct {
 	Wheel                        int
 	LeftBtn, MiddleBtn, RightBtn int32
 	EventQ                       MouseEventChannelType
-	dev                          *evdev.InputDevice
+	dev                          *evdev.Device
 	posRange                     geom.Rectangle[int]
 	minWheel, maxWheel           int
 	cursor                       *Cursor
@@ -142,7 +144,7 @@ type Mouse struct {
 }
 
 var (
-	devFile = "/dev/input/event4"
+	devFile = "/dev/input/myMouse"
 )
 
 // Funktionen

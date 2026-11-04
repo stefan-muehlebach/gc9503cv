@@ -2,6 +2,7 @@ package main
 
 import (
 	"image"
+	"log"
 	"math"
 
 	"github.com/stefan-muehlebach/gc9503cv/binding"
@@ -327,8 +328,13 @@ func (b *Radiobox) Draw(gc *gg.Context) {
 
 func (b *Radiobox) OnInputEvent(ev InputEvent) {
 	b.Button.OnInputEvent(ev)
-	if ev.Type == ClickEvent {
-		b.checked = !b.checked
+	switch ev.Type {
+	case ClickEvent:
+		if b.typ == Checkbox {
+			b.checked = !b.checked
+		} else {
+			b.checked = true
+		}
 	}
 }
 
@@ -343,9 +349,9 @@ type Slider struct {
 	orient                                  Orientation
 	initValue, minValue, maxValue, stepSize float64
 	value                                   binding.Float
-	barStart, barEnd                        Point
-	barLen                                  float64
 	ctrlPos                                 Point
+	//barStart, barEnd                        Point
+	//barLen                                  float64
 }
 
 func NewSlider(len float64, orient Orientation) *Slider {
@@ -353,14 +359,12 @@ func NewSlider(len float64, orient Orientation) *Slider {
 	s.Init(s)
 	s.InitProp("Slider")
 	s.orient = orient
-	d1 := max(0.5*s.BarSize(), 0.5*s.CtrlSize())
-	d2 := min(0.5*s.BarSize(), 0.5*s.CtrlSize())
+	//d := s.BarSize() / 2.0
+	log.Printf("w,h: %f,%f", s.Width(), s.Height())
 	if s.orient == Horizontal {
 		s.SetMinSize(Point{len, s.Height()})
-		s.barStart = Point{d2, d1}
 	} else {
 		s.SetMinSize(Point{s.Width(), len})
-		s.barStart = Point{d1, d2}
 	}
 	s.initValue = 0.0
 	s.minValue = 0.0
@@ -392,18 +396,14 @@ func (s *Slider) SetSize(size Point) {
 }
 
 func (s *Slider) updateCtrl() {
-	s.barEnd = s.Size().Sub(s.barStart)
-	d := s.CtrlSize() - s.BarSize()
 	if s.orient == Horizontal {
-		s.barLen = s.barEnd.X - s.barStart.X
-		p0 := s.barStart.AddXY(0.5*d, 0)
-		p1 := s.barEnd.AddXY(-0.5*d, 0)
+		p0 := s.Bounds().W().AddXY(s.CtrlSize()/2.0, 0)
+		p1 := s.Bounds().E().SubXY(s.CtrlSize()/2.0, 0)
 		s.ctrlPos = p0.Interpolate(p1, s.Factor())
 	} else {
-		s.barLen = s.barEnd.Y - s.barStart.Y
-		p0 := s.barStart.AddXY(0, 0.5*d)
-		p1 := s.barEnd.AddXY(0, -0.5*d)
-		s.ctrlPos = p0.Interpolate(p1, 1.0-s.Factor())
+		p0 := s.Bounds().S().SubXY(0, s.CtrlSize()/2.0)
+		p1 := s.Bounds().N().AddXY(0, s.CtrlSize()/2.0)
+		s.ctrlPos = p0.Interpolate(p1, s.Factor())
 	}
 }
 
@@ -429,11 +429,12 @@ func (s *Slider) Draw(gc *gg.Context) {
 		gc.SetLineColor(s.FillColor())
 	}
 	gc.SetLineWidth(s.CtrlSize())
-	ctrlPos := s.ctrlPos.Add(b.Min)
 	if s.orient == Horizontal {
-		gc.DrawLine(ctrlPos.X-0.5, ctrlPos.Y, ctrlPos.X+0.5, ctrlPos.Y)
+		gc.DrawLine(s.ctrlPos.X-0.5, s.ctrlPos.Y,
+			s.ctrlPos.X+0.5, s.ctrlPos.Y)
 	} else {
-		gc.DrawLine(ctrlPos.X, ctrlPos.Y-0.5, ctrlPos.X, ctrlPos.Y+0.5)
+		gc.DrawLine(s.ctrlPos.X, s.ctrlPos.Y-0.5,
+			s.ctrlPos.X, s.ctrlPos.Y+0.5)
 	}
 	gc.Stroke()
 }
@@ -501,10 +502,10 @@ func (s *Slider) OnInputEvent(ev InputEvent) {
 	case ReleaseEvent:
 		s.pushed = false
 	case WheelEvent:
-		if ev.WheelRel > 0 {
+		if ev.Wheel > 0 {
 			s.SetValue(s.Value() + s.stepSize)
 		}
-		if ev.WheelRel < 0 {
+		if ev.Wheel < 0 {
 			s.SetValue(s.Value() - s.stepSize)
 		}
 	case DragEvent, ClickEvent:
@@ -514,6 +515,7 @@ func (s *Slider) OnInputEvent(ev InputEvent) {
 			v, _ = r.PosRel(ev.Pos)
 		} else {
 			_, v = r.PosRel(ev.Pos)
+			v = 1.0 - v
 		}
 		s.SetFactor(v)
 		//s.Mark(MarkNeedsPaint)

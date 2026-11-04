@@ -24,37 +24,36 @@ func RandVel(low, high float64) float64 {
 	}
 }
 
-type CircleAnim struct {
+type CircleWin struct {
 	windowEmbed
 	selection Node
-	canvas    *Panel
+	canvas    *Group
 }
 
-func NewCircleAnimation(bounds geom.Rectangle[int], numObjs int) *CircleAnim {
-	a := &CircleAnim{}
+func NewCircleWindow(bounds geom.Rectangle[int], numObjs int) *CircleWin {
+	a := &CircleWin{}
 	a.bounds = bounds
 	a.gc = gg.NewContext(a.bounds.Dx(), a.bounds.Dy())
 	if numObjs <= 0 {
 		numObjs = defNumCircles
 	}
 
-	root := NewPanel(colors.SlateGray)
-	root.Layout = NewPadLayout(20)
+	root := NewGroup()
+	root.Layout = NewPadLayout(5)
 	root.SetSize(bounds.ToFloat().Size())
-	a.Root = root
 
-	a.canvas = NewPanel(colors.DarkSlateGray)
+	a.canvas = NewGroup()
 	a.canvas.Layout = &NullLayout{}
-	a.Root.Add(a.canvas)
+	root.Add(a.canvas)
 
-	log.Printf("a.canvas.Bounds(): %v", a.canvas.Bounds())
-	log.Printf("a.canvas.Rect()  : %v", a.canvas.Rect())
+	//log.Printf("a.canvas.Bounds(): %v", a.canvas.Bounds())
+	//log.Printf("a.canvas.Rect()  : %v", a.canvas.Rect())
 
 	for range numObjs {
 		a.canvas.Add(NewCircle(a.canvas.Rect(), colors.Greens))
 	}
 
-	a.Root.SetOnClick(func(ev InputEvent) {
+	root.SetOnClick(func(ev InputEvent) {
 		log.Printf("Click in the root object")
 	})
 
@@ -65,21 +64,20 @@ func NewCircleAnimation(bounds geom.Rectangle[int], numObjs int) *CircleAnim {
 			pt := ev.Pos.Sub(a.canvas.Pos())
 			c.SetPos(pt.SubXY(c.r, c.r))
 			a.canvas.Add(c)
-		default:
-			log.Printf("No click with left button")
 		}
 	})
+	a.Root = root
 
 	return a
 }
 
-func (a *CircleAnim) Init() {
+func (a *CircleWin) Init() {
 	a.gc.SetLineWidth(2.0)
 	a.gc.SetLineCapRound()
 	a.gc.SetLineJoinRound()
 }
 
-func (a *CircleAnim) Update(t time.Time) {
+func (a *CircleWin) Update(t time.Time) {
 	a.Root.Update(t)
 
 	for el := a.canvas.childList.Front(); el != nil; el = el.Next() {
@@ -100,8 +98,8 @@ func (a *CircleAnim) Update(t time.Time) {
 	}
 }
 
-func (a *CircleAnim) Refresh() {
-	a.gc.Clear(colors.Black)
+func (a *CircleWin) Refresh() {
+	a.gc.Clear(colors.DarkSlateGrey)
 	a.Root.Draw(a.gc)
 }
 

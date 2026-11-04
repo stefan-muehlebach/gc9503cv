@@ -8,24 +8,24 @@ import (
 	"github.com/stefan-muehlebach/gc9503cv/binding"
 	"github.com/stefan-muehlebach/gc9503cv/geom"
 	"github.com/stefan-muehlebach/gg"
-	"github.com/stefan-muehlebach/gg/colors"
+	"github.com/stefan-muehlebach/gg/fonts"
 )
 
-type GUI struct {
+type AdaGUIWin struct {
 	windowEmbed
 }
 
-func NewGUI(bounds geom.Rectangle[int]) *GUI {
-	a := &GUI{}
+func NewAdaGUIWindow(bounds geom.Rectangle[int]) *AdaGUIWin {
+	a := &AdaGUIWin{}
 	a.bounds = bounds
 	a.gc = gg.NewContext(a.bounds.Dx(), a.bounds.Dy())
 
-	root := NewPanel(colors.Black)
+	root := NewGroup()
 	root.Layout = NewPadLayout()
 	root.SetSize(bounds.ToFloat().Size())
 	a.Root = root
 
-	main := NewPanel(colors.Black)
+	main := NewGroup()
 	main.Layout = NewVBoxLayout()
 	root.Add(main)
 
@@ -113,6 +113,7 @@ func NewGUI(bounds geom.Rectangle[int]) *GUI {
 	sld := NewSliderWithData(170, Horizontal, sldVal)
 	sld.SetRange(0.0, 2*math.Pi, math.Pi/36.0)
 	lbl := NewLabelWithData(str)
+	lbl.SetRegularFont(fonts.LucidaCalligraphyBold)
 	sld1Group.Add(sld, lbl)
 
 	sld2Group := NewGroup()
@@ -134,6 +135,42 @@ func NewGUI(bounds geom.Rectangle[int]) *GUI {
 		gridGroup.Add(btn)
 	}
 	main.Add(gridGroup)
+
+	sldGroup = NewGroup()
+	sldGroup.Layout = NewHBoxLayout()
+
+	sld1Group = NewGroup()
+	sld1Group.Layout = NewVBoxLayout()
+	sldVal = binding.NewFloat()
+	str = binding.FloatToStringWithFormat(sldVal, "%.1f")
+	sld = NewSliderWithData(100, Vertical, sldVal)
+	sld.SetRange(0.0, 1.0, 0.1)
+	lbl = NewLabelWithData(str)
+	title := NewLabel("Red")
+	sld1Group.Add(title, sld, lbl)
+
+	sld2Group = NewGroup()
+	sld2Group.Layout = NewVBoxLayout()
+	sldVal = binding.NewFloat()
+	str = binding.FloatToStringWithFormat(sldVal, "%.1f")
+	sld = NewSliderWithData(100, Vertical, sldVal)
+	sld.SetRange(0.0, 1.0, 0.1)
+	lbl = NewLabelWithData(str)
+	title = NewLabel("Green")
+	sld2Group.Add(title, sld, lbl)
+
+	sld3Group := NewGroup()
+	sld3Group.Layout = NewVBoxLayout()
+	sldVal = binding.NewFloat()
+	str = binding.FloatToStringWithFormat(sldVal, "%.1f")
+	sld = NewSliderWithData(100, Vertical, sldVal)
+	sld.SetRange(0.0, 1.0, 0.1)
+	lbl = NewLabelWithData(str)
+	title = NewLabel("Blue")
+	sld3Group.Add(title, sld, lbl)
+
+	sldGroup.Add(sld1Group, sld2Group, sld3Group)
+	main.Add(sldGroup)
 
 	//sld1 := NewSlider(150, Horizontal)
 	//sld2 := NewSlider(150, Horizontal)

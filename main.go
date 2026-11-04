@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"image/color"
 	"log"
 	"os"
 	"os/signal"
@@ -35,15 +34,6 @@ var (
 		"Simple Painter",
 		"Sprites Demo",
 		"Slideshow",
-	}
-
-	colorList = []color.RGBA{
-		color.RGBA{0xff, 0x00, 0x00, 0xff},
-		color.RGBA{0xff, 0xff, 0x00, 0xff},
-		color.RGBA{0x00, 0xff, 0x00, 0xff},
-		color.RGBA{0x00, 0xff, 0xff, 0xff},
-		color.RGBA{0x00, 0x00, 0xff, 0xff},
-		color.RGBA{0xff, 0x00, 0xff, 0xff},
 	}
 )
 
@@ -116,21 +106,21 @@ func main() {
 
 	switch progIdx {
 	case 0:
-		win = NewStripeAnimation(drawBounds, colorList)
+		win = NewStripeWindow(drawBounds, colorList)
 	case 1:
-		win = NewPolygonAnimation(drawBounds, numObjs)
+		win = NewPolygonWindow(drawBounds, numObjs)
 	case 2:
-		win = NewCircleAnimation(drawBounds, 0)
+		win = NewCircleWindow(drawBounds, 0)
 	case 3:
 		win = NewPolyhedronWindow(drawBounds)
 	case 4:
-		win = NewGoColorAnimation(drawBounds)
+		win = NewGoColorWindow(drawBounds)
 	case 5:
-		win = NewFontsAnimation(drawBounds)
+		win = NewFontsWindow(drawBounds)
 	case 6:
-		win = NewShuffleAnimation(drawBounds)
+		win = NewShuffleWindow(drawBounds)
 	case 7:
-		win = NewGUI(drawBounds)
+		win = NewAdaGUIWindow(drawBounds)
 	case 8:
 		win = NewPainterWindow(drawBounds)
 	case 9:

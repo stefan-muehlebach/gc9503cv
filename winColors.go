@@ -11,11 +11,12 @@ import (
 )
 
 var (
-	BackColor = colors.DimGray.Dark(0.6)
+	BackColor  = colors.DarkSlateGrey.Dark(0.6)
+	SquareSize = 60.0
+	HalveSize  = SquareSize / 2.0
 )
 
-type GoColorAnim struct {
-	// eventHandlerEmbed
+type GoColorWin struct {
 	windowEmbed
 	t0        time.Time
 	patIdx    int
@@ -23,8 +24,8 @@ type GoColorAnim struct {
 	colorList []string
 }
 
-func NewGoColorAnimation(bounds geom.Rectangle[int]) *GoColorAnim {
-	a := &GoColorAnim{}
+func NewGoColorWindow(bounds geom.Rectangle[int]) *GoColorWin {
+	a := &GoColorWin{}
 	a.bounds = bounds
 	a.gc = gg.NewContext(a.bounds.Dx(), a.bounds.Dy())
 	a.patIdx = 0
@@ -34,30 +35,33 @@ func NewGoColorAnimation(bounds geom.Rectangle[int]) *GoColorAnim {
 	a.Root.SetSize(bounds.ToFloat().Size())
 
 	a.Root.SetOnClick(func(ev InputEvent) {
-		if ev.Button.IsSet(LeftButton) {
-			a.isManual = true
-			a.patIdx = (a.patIdx + 1) % NumPattern
-		}
 		if ev.Button.IsSet(RightButton) {
-			a.isManual = true
-			a.patIdx = (a.patIdx - 1 + NumPattern) % NumPattern
+			a.isManual = false
+		}
+	})
+	a.Root.SetOnWheel(func(ev InputEvent) {
+		a.isManual = true
+		if ev.Wheel > 0 {
+			a.patIdx = (a.patIdx + ev.Wheel) % NumPattern
+		} else if ev.Wheel < 0 {
+			a.patIdx = (a.patIdx + NumPattern + ev.Wheel) % NumPattern
 		}
 	})
 	return a
 }
 
-func (a *GoColorAnim) Init() {
-	log.Printf("Interaction")
+func (a *GoColorWin) Init() {
+	log.Printf("Interaction:")
 	log.Printf("-----------------------------------------------------------")
-	log.Printf("LMB - Jump to the next pattern")
-	log.Printf("RMB - Jump to the previous pattern")
+	log.Printf("RMB   - Return to automatic switching")
+	log.Printf("Wheel - Surf through the patterns")
 	a.gc.SetLineWidth(2.0)
 	a.gc.SetLineCapRound()
 	a.gc.SetLineJoinRound()
 	a.t0 = time.Now()
 }
 
-func (a *GoColorAnim) Update(t time.Time) {
+func (a *GoColorWin) Update(t time.Time) {
 	if a.isManual {
 		return
 	}
@@ -67,13 +71,13 @@ func (a *GoColorAnim) Update(t time.Time) {
 	}
 }
 
-func (a *GoColorAnim) Refresh() {
+func (a *GoColorWin) Refresh() {
 	a.gc.Clear(BackColor)
 	idx := 0
-	for row := range a.bounds.Dy() / 60 {
-		y := float64(row * 60)
-		for col := range a.bounds.Dx() / 60 {
-			x := float64(col * 60)
+	for row := range a.bounds.Dy() / int(SquareSize) {
+		y := float64(row) * SquareSize
+		for col := range a.bounds.Dx() / int(SquareSize) {
+			x := float64(col) * SquareSize
 			DrawerList[a.patIdx](a.gc, x, y, colors.Map[a.colorList[idx]])
 			idx = (idx + 1) % len(a.colorList)
 		}
@@ -86,59 +90,47 @@ type PatternDrawer func(gc *gg.Context, x, y float64, col colors.RGBA)
 
 var (
 	DrawerList = []PatternDrawer{
+		// Draw a filled square
 		func(gc *gg.Context, x, y float64, col colors.RGBA) {
 			gc.SetFillColor(col)
-			gc.DrawRectangle(x, y, 60.0, 60.0)
+			gc.DrawRectangle(x, y, SquareSize, SquareSize)
 			gc.Fill()
 		},
+		// Draw a filled rounded square
 		func(gc *gg.Context, x, y float64, col colors.RGBA) {
 			gc.SetFillColor(col)
-			gc.DrawRoundedRectangle(x, y, 60.0, 60.0, 20.0)
+			gc.DrawRoundedRectangle(x, y, SquareSize, SquareSize, SquareSize/3)
 			gc.Fill()
 		},
+		// Draw rhombuses instead of squares
 		func(gc *gg.Context, x, y float64, col colors.RGBA) {
+			overLength := SquareSize / 4.0
 			gc.SetFillColor(col)
-			gc.DrawCircle(x+30.0, y+30.0, 30.0-1.0)
-			gc.Fill()
-		},
-		func(gc *gg.Context, x, y float64, col colors.RGBA) {
-			gc.SetFillColor(col)
-			gc.DrawRectangle(x, y, 60.0, 60.0)
-			gc.Fill()
-			gc.SetFillColor(BackColor)
-			gc.DrawCircle(x+30.0, y+30.0, 30.0-1.0)
-			gc.Fill()
-		},
-		func(gc *gg.Context, x, y float64, col colors.RGBA) {
-			gc.SetFillColor(col)
-			gc.DrawCircle(x+30.0, y+30.0, 30.0)
-			gc.Fill()
-			gc.SetFillColor(BackColor)
-			gc.DrawCircle(x+30.0, y+30.0, 30.0-15.0)
-			gc.Fill()
-		},
-		func(gc *gg.Context, x, y float64, col colors.RGBA) {
-			for rad := 30.0; rad > 5.0; rad -= 10.0 {
-				gc.SetFillColor(col)
-				gc.DrawCircle(x+30.0, y+30.0, rad)
-				gc.Fill()
-				gc.SetFillColor(BackColor)
-				gc.DrawCircle(x+30.0, y+30.0, rad-5.0)
-				gc.Fill()
-			}
-		},
-		func(gc *gg.Context, x, y float64, col colors.RGBA) {
-			overLength := 15.0
-			gc.SetFillColor(col)
-			gc.MoveTo(x+30.0, y-overLength)
-			gc.LineTo(x+60.0+overLength, y+30.0)
-			gc.LineTo(x+30.0, y+60.0+overLength)
-			gc.LineTo(x-overLength, y+30.0)
+			gc.MoveTo(x+HalveSize, y-overLength)
+			gc.LineTo(x+SquareSize+overLength, y+HalveSize)
+			gc.LineTo(x+HalveSize, y+SquareSize+overLength)
+			gc.LineTo(x-overLength, y+HalveSize)
 			gc.ClosePath()
 			gc.Fill()
 		},
+		// Draw a filled circle
 		func(gc *gg.Context, x, y float64, col colors.RGBA) {
-			radius := 60.0
+			gc.SetFillColor(col)
+			gc.DrawCircle(x+HalveSize, y+HalveSize, HalveSize-1.0)
+			gc.Fill()
+		},
+		// Draw a filled square with a black hole in it
+		func(gc *gg.Context, x, y float64, col colors.RGBA) {
+			gc.SetFillColor(col)
+			gc.DrawRectangle(x, y, SquareSize, SquareSize)
+			gc.Fill()
+			gc.SetFillColor(BackColor)
+			gc.DrawCircle(x+HalveSize, y+HalveSize, HalveSize-1.0)
+			gc.Fill()
+		},
+		// Draw a quarter of a circle
+		func(gc *gg.Context, x, y float64, col colors.RGBA) {
+			radius := SquareSize
 			gc.SetFillColor(col)
 			gc.MoveTo(x, y)
 			gc.LineTo(x+radius, y)
@@ -146,15 +138,37 @@ var (
 			gc.ClosePath()
 			gc.Fill()
 		},
+		// Draw a circle with a bold pen
+		func(gc *gg.Context, x, y float64, col colors.RGBA) {
+			gc.SetFillColor(col)
+			gc.DrawCircle(x+HalveSize, y+HalveSize, HalveSize-1.0)
+			gc.Fill()
+			gc.SetFillColor(BackColor)
+			gc.DrawCircle(x+HalveSize, y+HalveSize, HalveSize-15.0)
+			gc.Fill()
+		},
+		// Draw multiple circles within each other
 		func(gc *gg.Context, x, y float64, col colors.RGBA) {
 			step := 10.0
-			x1 := 30.0
-			x2 := 30.0 + step/2.0
-			gc.SetLineWidth(step / 2.0)
+			lineWidth := step / 2.0
+			gc.SetLineWidth(lineWidth)
 			gc.SetLineColor(col)
-			for radius := 27.0; radius >= step/2.0; radius -= step {
-				gc.DrawArc(x+x1, y+30.0, radius, -math.Pi, 0)
-				gc.DrawArc(x+x2, y+30.0, radius-step/2.0, 0, math.Pi)
+			for radius := HalveSize - lineWidth/2.0 - 1.0; radius >= step/2.0; radius -= step {
+				gc.DrawCircle(x+HalveSize, y+HalveSize, radius)
+				gc.Stroke()
+			}
+		},
+		// Draw a spiral
+		func(gc *gg.Context, x, y float64, col colors.RGBA) {
+			step := 10.0
+			lineWidth := step / 2.0
+			y1 := HalveSize
+			y2 := HalveSize + step/2.0
+			gc.SetLineWidth(lineWidth)
+			gc.SetLineColor(col)
+			for radius := HalveSize - lineWidth/2.0 - 1.0; radius >= step/2.0; radius -= step {
+				gc.DrawArc(x+HalveSize, y+y1, radius, -math.Pi/2.0, math.Pi/2.0)
+				gc.DrawArc(x+HalveSize, y+y2, radius-step/2.0, math.Pi/2.0, 3.0*math.Pi/2.0)
 			}
 			gc.Stroke()
 		},

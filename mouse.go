@@ -56,20 +56,28 @@ const (
 	numEvents
 )
 
-type MouseButtonType byte
+type MouseButton byte
 
 const (
-	LeftButton MouseButtonType = (1 << iota)
+	LeftButton MouseButton = (1 << iota)
 	MiddleButton
 	RightButton
 )
 
-func (b MouseButtonType) IsSet(val MouseButtonType) bool {
-	if b&val != 0x00 {
-		return true
-	} else {
-		return false
-	}
+func (b MouseButton) IsSet(val MouseButton) bool {
+	return b&val != 0x00
+}
+
+type Modifiers uint32
+
+const (
+	ModShift Modifiers = (1 << iota)
+	ModCtrl
+	ModAlt
+)
+
+func (m Modifiers) IsSet(val Modifiers) bool {
+	return m&val != 0x00
 }
 
 //----------------------------------------------------------------------------
@@ -128,33 +136,37 @@ const (
 // Dies ist der Funktionstyp für den PenEvent-Handler - also jene Funktion,
 // welche beim Eintreffen eines Interrupts vom STMPE610 aufgerufen werden
 // soll.
-type MouseEventChannelType chan InputEvent
+type InputEventChan chan InputEvent
 
 // Dieser Typ steht fuer das SPI Interface zum STMPE - dem Touchscreen.
 type Mouse struct {
-	Pos                          geom.Point[int]
-	Wheel                        int
+	devs                         []*evdev.Device
+	EventQ                       InputEventChan
 	LeftBtn, MiddleBtn, RightBtn int32
-	EventQ                       MouseEventChannelType
-	dev                          *evdev.Device
+	Pos                          geom.Point[int]
 	posRange                     geom.Rectangle[int]
-	minWheel, maxWheel           int
-	cursor                       *Cursor
-	isOpen                       bool
+	Wheel                        int
+	//minWheel, maxWheel           int
+	cursor *Cursor
+	isOpen bool
 }
 
 var (
-	devFile = "/dev/input/myMouse"
+	devFiles = []string{
+		"/dev/input/myMouse",
+		"/dev/input/myKeyboard",
+	}
 )
 
 // Funktionen
 func OpenMouse() *Mouse {
-	var err error
-
 	m := &Mouse{}
-	m.dev, err = evdev.Open(devFile)
-	if err != nil {
-		log.Fatalf("evdev.Open failed: %v", err)
+	for _, devFile := range devFiles {
+		dev, err := evdev.Open(devFile)
+		if err != nil {
+			log.Fatalf("evdev.Open failed: %v", err)
+		}
+		m.devs = append(m.devs, dev)
 	}
 	m.LeftBtn, m.MiddleBtn, m.RightBtn = 0, 0, 0
 	m.EventQ = make(chan InputEvent, eventQueueSize)
@@ -165,7 +177,9 @@ func OpenMouse() *Mouse {
 func (m *Mouse) Close() {
 	m.isOpen = false
 	close(m.EventQ)
-	m.dev.Close()
+	for _, dev := range m.devs {
+		dev.Close()
+	}
 }
 
 func (m *Mouse) SetCursor(cursor *Cursor) (old *Cursor) {
@@ -199,14 +213,16 @@ func (m *Mouse) SetPosRange(rect geom.Rectangle[int]) {
 	m.Pos = rect.Center()
 }
 
-func (m *Mouse) SetWheelRange(ini, min, max int) {
-	m.Wheel = ini
-	m.minWheel = min
-	m.maxWheel = max
-}
+//func (m *Mouse) SetWheelRange(ini, min, max int) {
+//	m.Wheel = ini
+//	m.minWheel = min
+//	m.maxWheel = max
+//}
 
 func (m *Mouse) Start() {
-	go m.processEvents()
+	for _, dev := range m.devs {
+		go m.processEvents(dev)
+	}
 }
 
 func (m *Mouse) Stop() {
@@ -241,15 +257,16 @@ func (m *Mouse) enqueueEvent(ev InputEvent) {
 
 //-----------------------------------------------------------------------------
 
-func (m *Mouse) processEvents() {
-	var mev InputEvent
+var (
+	ev InputEvent
+)
 
+func (m *Mouse) processEvents(dev *evdev.Device) {
 	for {
-		e, err := m.dev.ReadOne()
+		e, err := dev.ReadOne()
 		if err != nil {
 			log.Fatalf("ReadOne() failed: %v", err)
 		}
-		//log.Printf("system type: %d", e.Type)
 		switch e.Type {
 		case evdev.EV_REL:
 			switch e.Code {
@@ -269,81 +286,101 @@ func (m *Mouse) processEvents() {
 						m.Pos.Y = m.posRange.Max.Y - 1
 					}
 				}
-				if mev.Button > 0 {
-					mev.Type = DragEvent
+				if ev.Button > 0 {
+					ev.Type = DragEvent
 				} else {
-					mev.Type = MoveEvent
+					ev.Type = MoveEvent
 				}
-				mev.Pos = m.Pos.ToFloat()
-				mev.Time = time.Now()
-				m.enqueueEvent(mev)
+				ev.Pos = m.Pos.ToFloat()
+				ev.Time = time.Now()
+				m.enqueueEvent(ev)
 			case evdev.REL_WHEEL:
 				m.Wheel += int(e.Value)
-				if m.Wheel < m.minWheel {
-					m.Wheel = m.minWheel
-				} else if m.Wheel >= m.maxWheel {
-					m.Wheel = m.maxWheel - 1
-				}
-				mev.Type = WheelEvent
-				mev.Wheel = m.Wheel
-				mev.WheelRel = int(e.Value)
-				mev.Time = time.Now()
-				m.enqueueEvent(mev)
+				ev.Type = WheelEvent
+				ev.Wheel = int(e.Value)
+				ev.Time = time.Now()
+				m.enqueueEvent(ev)
+				ev.Wheel = 0
 			default:
 				continue
 			}
 
 		case evdev.EV_KEY:
-			switch e.Value {
-			case 1:
-				mev.Type = PressEvent
-				mev.InitTime = time.Now()
-				mev.Time = mev.InitTime
-				mev.InitPos = m.Pos.ToFloat()
-				mev.Pos = mev.InitPos
-				mev.LongPressed = false
-				switch e.Code {
-				case evdev.BTN_LEFT:
-					mev.Button = LeftButton
-				case evdev.BTN_RIGHT:
-					mev.Button = RightButton
-				case evdev.BTN_MIDDLE:
-					mev.Button = MiddleButton
-				}
-
-				go func() {
-					mevCopy := mev
-					time.Sleep(LongPressThreshold)
-					if (mev.Type == PressEvent || mev.Type == DragEvent) &&
-						mev.Button == mevCopy.Button &&
-						mev.InitPos.Distance(mev.Pos) < NearThreshold {
-						mev.LongPressed = true
-						mevCopy = mev
-						mevCopy.Type = LongPressEvent
-						mevCopy.Time = time.Now()
-						m.enqueueEvent(mevCopy)
+			switch e.Code {
+			case evdev.BTN_LEFT, evdev.BTN_RIGHT, evdev.BTN_MIDDLE:
+				switch e.Value {
+				case 1:
+					ev.Type = PressEvent
+					ev.InitTime = time.Now()
+					ev.Time = ev.InitTime
+					ev.InitPos = m.Pos.ToFloat()
+					ev.Pos = ev.InitPos
+					ev.LongPressed = false
+					switch e.Code {
+					case evdev.BTN_LEFT:
+						ev.Button = LeftButton
+					case evdev.BTN_RIGHT:
+						ev.Button = RightButton
+					case evdev.BTN_MIDDLE:
+						ev.Button = MiddleButton
 					}
-				}()
-				m.enqueueEvent(mev)
 
-			case 0:
-				mev.Type = ReleaseEvent
-				mev.Time = time.Now()
-				mev.Pos = m.Pos.ToFloat()
-				m.enqueueEvent(mev)
+					go func() {
+						evCopy := ev
+						time.Sleep(LongPressThreshold)
+						if (ev.Type == PressEvent || ev.Type == DragEvent) &&
+							ev.Button == evCopy.Button &&
+							ev.InitPos.Distance(ev.Pos) < NearThreshold {
+							ev.LongPressed = true
+							evCopy = ev
+							evCopy.Type = LongPressEvent
+							evCopy.Time = time.Now()
+							m.enqueueEvent(evCopy)
+						}
+					}()
+					m.enqueueEvent(ev)
 
-				if mev.InitPos.Distance(mev.Pos) < NearThreshold &&
-					mev.Time.Sub(mev.InitTime) < ClickDuration {
-					mev.Type = ClickEvent
-					m.enqueueEvent(mev)
+				case 0:
+					ev.Type = ReleaseEvent
+					ev.Time = time.Now()
+					ev.Pos = m.Pos.ToFloat()
+					m.enqueueEvent(ev)
+
+					if ev.InitPos.Distance(ev.Pos) < NearThreshold &&
+						ev.Time.Sub(ev.InitTime) < ClickDuration {
+						ev.Type = ClickEvent
+						m.enqueueEvent(ev)
+					}
+					ev.InitPos = Point{}
+					ev.InitTime = time.Time{}
+					ev.LongPressed = false
+					ev.Button = 0x00
+
+				case 2:
+					// Fuer repetition eines buttons.
 				}
-				mev.InitPos = Point{}
-				mev.InitTime = time.Time{}
-				mev.LongPressed = false
-				mev.Button = 0x00
-
-			case 2:
-				// Fuer repetition eines buttons.
+			case evdev.KEY_LEFTSHIFT, evdev.KEY_RIGHTSHIFT:
+				switch e.Value {
+				case 0:
+					ev.Modifiers = ev.Modifiers &^ ModShift
+				case 1:
+					ev.Modifiers = ev.Modifiers | ModShift
+				}
+				//log.Printf("%+v", ev)
+			case evdev.KEY_LEFTCTRL, evdev.KEY_RIGHTCTRL:
+				switch e.Value {
+				case 0:
+					ev.Modifiers = ev.Modifiers &^ ModCtrl
+				case 1:
+					ev.Modifiers = ev.Modifiers | ModCtrl
+				}
+			case evdev.KEY_LEFTALT, evdev.KEY_RIGHTALT:
+				switch e.Value {
+				case 0:
+					ev.Modifiers = ev.Modifiers &^ ModAlt
+				case 1:
+					ev.Modifiers = ev.Modifiers | ModAlt
+				}
 			}
 		default:
 			continue
@@ -357,10 +394,10 @@ func (m *Mouse) processEvents() {
 // 'Event' repraesentiert.
 type InputEvent struct {
 	Type           InputEventType
-	Time, InitTime time.Time
+	InitTime, Time time.Time
 	InitPos, Pos   Point // geom.Point[int]
-	Button         MouseButtonType
-	LongPressed    bool
+	Button         MouseButton
 	Wheel          int
-	WheelRel       int
+	LongPressed    bool
+	Modifiers      Modifiers
 }

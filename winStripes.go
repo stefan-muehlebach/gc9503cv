@@ -10,7 +10,18 @@ import (
 	"github.com/stefan-muehlebach/gg"
 )
 
-type StripeAnim struct {
+var (
+	colorList = []color.RGBA{
+		color.RGBA{0xff, 0x00, 0x00, 0xff},
+		color.RGBA{0xff, 0xff, 0x00, 0xff},
+		color.RGBA{0x00, 0xff, 0x00, 0xff},
+		color.RGBA{0x00, 0xff, 0xff, 0xff},
+		color.RGBA{0x00, 0x00, 0xff, 0xff},
+		color.RGBA{0xff, 0x00, 0xff, 0xff},
+	}
+)
+
+type StripeWin struct {
 	windowEmbed
 	img         *image.RGBA
 	colorList   []color.RGBA
@@ -19,9 +30,9 @@ type StripeAnim struct {
 	dt          float64
 }
 
-func NewStripeAnimation(bounds geom.Rectangle[int],
-	colorList []color.RGBA) *StripeAnim {
-	a := &StripeAnim{}
+func NewStripeWindow(bounds geom.Rectangle[int],
+	colorList []color.RGBA) *StripeWin {
+	a := &StripeWin{}
 
 	a.bounds = bounds
 	a.gc = gg.NewContext(a.bounds.Dx(), a.bounds.Dy())
@@ -36,15 +47,15 @@ func NewStripeAnimation(bounds geom.Rectangle[int],
 	return a
 }
 
-func (a *StripeAnim) Init() {
+func (a *StripeWin) Init() {
 	a.dt = 0.0
 }
 
-func (a *StripeAnim) Update(t time.Time) {
+func (a *StripeWin) Update(t time.Time) {
 	a.dt += 20.0
 }
 
-func (a *StripeAnim) Refresh() {
+func (a *StripeWin) Refresh() {
 	for row := range a.size.Y {
 		t := (a.dt + float64(row)) / float64(a.size.Y-1)
 		t = math.Mod(t, 2.0)

@@ -13,15 +13,15 @@ const (
 	defNumPolygons = 20
 )
 
-type PolygonAnim struct {
+type PolygonWin struct {
 	windowEmbed
-	canvas *Panel
+	canvas *Group
 }
 
-func NewPolygonAnimation(bounds geom.Rectangle[int],
-	numObjs int) *PolygonAnim {
+func NewPolygonWindow(bounds geom.Rectangle[int],
+	numObjs int) *PolygonWin {
 	numEdges := 3
-	a := &PolygonAnim{}
+	a := &PolygonWin{}
 
 	a.bounds = bounds
 	a.gc = gg.NewContext(bounds.Dx(), bounds.Dy())
@@ -30,10 +30,11 @@ func NewPolygonAnimation(bounds geom.Rectangle[int],
 	}
 
 	root := NewGroup()
-	root.Layout = NewPadLayout(20)
+	root.Layout = NewPadLayout(5)
 	root.SetSize(bounds.ToFloat().Size())
 
-	a.canvas = NewPanel(colors.Transparent)
+	a.canvas = NewGroup()
+	a.canvas.Layout = &NullLayout{}
 	root.Add(a.canvas)
 
 	for i := 0; i < numObjs; i++ {
@@ -44,18 +45,18 @@ func NewPolygonAnimation(bounds geom.Rectangle[int],
 	return a
 }
 
-func (a *PolygonAnim) Init() {
+func (a *PolygonWin) Init() {
 	a.gc.SetLineWidth(2.0)
 	a.gc.SetLineCapRound()
 	a.gc.SetLineJoinRound()
 }
 
-func (a *PolygonAnim) Update(t time.Time) {
+func (a *PolygonWin) Update(t time.Time) {
 	a.Root.Update(t)
 }
 
-func (a *PolygonAnim) Refresh() {
-	a.gc.Clear(colors.Black)
+func (a *PolygonWin) Refresh() {
+	a.gc.Clear(colors.DarkSlateGrey)
 	a.Root.Draw(a.gc)
 }
 

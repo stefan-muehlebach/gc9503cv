@@ -12,7 +12,7 @@ import (
 	"github.com/stefan-muehlebach/gg/colors"
 )
 
-type ShuffleAnim struct {
+type ShuffleWin struct {
 	windowEmbed
 	size       image.Rectangle
 	img        *image.RGBA
@@ -25,10 +25,10 @@ type ShuffleAnim struct {
 	dt         time.Duration
 }
 
-func NewShuffleAnimation(bounds geom.Rectangle[int]) *ShuffleAnim {
+func NewShuffleWindow(bounds geom.Rectangle[int]) *ShuffleWin {
 	var err error
 
-	a := &ShuffleAnim{}
+	a := &ShuffleWin{}
 	a.bounds = bounds
 	a.size = image.Rectangle{Max: bounds.Size().ToInt()}
 	a.gc = gg.NewContext(a.bounds.Dx(), a.bounds.Dy())
@@ -60,7 +60,7 @@ func NewShuffleAnimation(bounds geom.Rectangle[int]) *ShuffleAnim {
 	return a
 }
 
-func (a *ShuffleAnim) Init() {
+func (a *ShuffleWin) Init() {
 	p0 := image.Point{8, 0}
 	dx := image.Point{a.sz.Dx() + 8, 0}
 	dy := image.Point{0, a.sz.Dy() + 8}
@@ -77,7 +77,7 @@ func (a *ShuffleAnim) Init() {
 	a.dt = 30 * time.Millisecond
 }
 
-func (a *ShuffleAnim) Update(t time.Time) {
+func (a *ShuffleWin) Update(t time.Time) {
 	if time.Since(a.t0) > a.dt {
 		rand.Shuffle(len(a.idxList), func(i, j int) {
 			a.idxList[i], a.idxList[j] = a.idxList[j], a.idxList[i]
@@ -87,7 +87,7 @@ func (a *ShuffleAnim) Update(t time.Time) {
 	}
 }
 
-func (a *ShuffleAnim) Refresh() {
+func (a *ShuffleWin) Refresh() {
 	a.gc.Clear(colors.DimGray.Dark(0.6))
 	for i := range a.idxList {
 		srcPt := a.originList[i]

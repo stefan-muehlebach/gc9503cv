@@ -237,18 +237,18 @@ func NewApplication(disp *GC9503CV) *Application {
 	a.disp = disp
 	a.Timer = NewStopwatch("Rendering Pipeline")
 	a.Timer.SetLapNames(
-		"Animate",
-		"Refresh",
-		"Compose",
-		"Convert",
-		"Send",
+		"Update  (win)",
+		"Refresh (win)",
+		"Compose (app)",
+		"Convert (app)",
+		"Send    (app)",
 	)
 	a.mainImg = image.NewRGBA(disp.DrawBounds().ToInt())
 	a.pixBuf = iliimg.NewILIImage(disp.DispBounds().ToInt())
 	a.pixBuf.SetLSBFirst()
 	a.mouse = OpenMouse()
 	a.mouse.SetPosRange(disp.DrawRect())
-	a.mouse.SetWheelRange(0, 0, 100)
+	//a.mouse.SetWheelRange(0, 0, 100)
 	a.mouse.SetCursor(LeftPtrCursor)
 
 	return a

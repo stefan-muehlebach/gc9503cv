@@ -90,8 +90,8 @@ func NewPolyhedronWindow(bounds geom.Rectangle[int]) *PolyhedronWin {
 
 	a.dAlpha = math.Pi / 300.0
 	a.dBeta = math.Pi / 225.0
-	a.zoom = 1.5
-	a.isManual = true
+	a.zoom = 1.0
+	a.isManual = false
 
 	var lastPos Point
 
@@ -118,9 +118,9 @@ func NewPolyhedronWindow(bounds geom.Rectangle[int]) *PolyhedronWin {
 		}
 	})
 	a.Root.SetOnWheel(func(ev InputEvent) {
-		if ev.WheelRel < 0 {
+		if ev.Wheel < 0 {
 			a.zoom = a.zoom * 0.9
-		} else {
+		} else if ev.Wheel > 0 {
 			a.zoom = a.zoom / 0.9
 		}
 	})
@@ -155,7 +155,7 @@ func (a *PolyhedronWin) Update(t time.Time) {
 }
 
 func (a *PolyhedronWin) Refresh() {
-	a.gc.Clear(colors.Black)
+	a.gc.Clear(colors.DarkSlateGrey)
 	slices.SortFunc(a.objList, func(a, b Object3D) int {
 		_, aMax := a.Z()
 		_, bMax := b.Z()
